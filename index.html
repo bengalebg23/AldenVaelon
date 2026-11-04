@@ -271,9 +271,17 @@ try{const t=localStorage.getItem("alden-tab"); if(t) tab=t;}catch(e){}
 
 /* ---------- persistence ---------- */
 // Paste the Firebase web config here (same project as Meal Rota is fine). Leave null to save on this device only.
-const FIREBASE_CONFIG=null;
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyCLLs4IjqG7ouPpyzJWLOhxdpmlG5XKzqY",
+  authDomain:"aldenvaelon-bac1e.firebaseapp.com",
+  databaseURL:"https://aldenvaelon-bac1e-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"aldenvaelon-bac1e",
+  storageBucket:"aldenvaelon-bac1e.firebasestorage.app",
+  messagingSenderId:"762981180689",
+  appId:"1:762981180689:web:799779511c6c615b2d98b0"
+};
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.1.0";
+const VERSION="v1.1.1";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
