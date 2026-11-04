@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Alden Vaelon III</title>
+<meta name="theme-color" content="#294778">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a single-column field ledger under a heraldic header; tabs live in a bar pinned to the bottom like a soldier's kit roll. */
+:root{
+  --bg:#eceff3; --surface:#ffffff; --sunk:#e2e6ec; --ink:#1b2130; --muted:#5a6476; --line:#d3d9e2;
+  --gold:#a8730f; --gold-soft:#f3e6c8; --blue:#294778; --blue-soft:#dde5f2; --danger:#a5322c; --good:#2e7650;
+  --display:"Marcellus SC","Cormorant SC",Georgia,serif;
+  --body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10141b; --surface:#19202a; --sunk:#0c1016; --ink:#e5e8ee; --muted:#98a2b3; --line:#2a3240;
+  --gold:#e3b04f; --gold-soft:#3a2f17; --blue:#94b3e6; --blue-soft:#1e2a40; --danger:#e57f76; --good:#6fc496; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141b; --surface:#19202a; --sunk:#0c1016; --ink:#e5e8ee; --muted:#98a2b3; --line:#2a3240;
+  --gold:#e3b04f; --gold-soft:#3a2f17; --blue:#94b3e6; --blue-soft:#1e2a40; --danger:#e57f76; --good:#6fc496; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 calc(84px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:760px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h2{font-family:var(--display);font-weight:400;font-size:1.05rem;letter-spacing:.08em;margin:0;color:var(--blue);text-wrap:balance}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+
+/* Header */
+header{padding-block:22px 14px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.crest{width:54px;height:66px}
+.who h1{font-family:var(--display);font-weight:400;font-size:1.7rem;line-height:1.05;margin:0;text-wrap:balance}
+.who .sub{color:var(--muted);font-size:.9rem}
+.who .title{font-style:italic;color:var(--gold);font-size:.88rem;margin-top:2px}
+.status{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:.82rem}
+.chip.conc{border-color:var(--gold);background:var(--gold-soft)}
+.chip button{border:0;background:none;padding:0 0 0 4px;color:var(--muted)}
+.save-state{font-size:.75rem;color:var(--muted);margin-left:auto}
+
+section{display:grid;gap:12px;margin-bottom:22px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* HP */
+.hp{display:grid;gap:12px}
+.hp-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hp-big{font-family:var(--mono);font-size:2.6rem;font-weight:600;line-height:1}
+.hp-max{color:var(--muted);font-family:var(--mono)}
+.bar{height:10px;border-radius:5px;background:var(--sunk);overflow:hidden;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--good);transition:width .25s}
+.bar i.low{background:var(--gold)} .bar i.crit{background:var(--danger)}
+.bar b{position:absolute;top:0;bottom:0;background:var(--blue);opacity:.55}
+.hp-ctl{display:grid;grid-template-columns:1fr auto auto auto;gap:8px}
+input[type=number],input[type=text],textarea{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%}
+textarea{min-height:110px;resize:vertical}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-weight:500}
+.btn.dmg{background:var(--danger);border-color:var(--danger);color:var(--surface)}
+.btn.heal{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.gold{border-color:var(--gold);color:var(--gold)}
+.btn.sm{padding:4px 9px;font-size:.85rem}
+.btn:disabled{opacity:.4;cursor:default}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.35rem;font-weight:600}
+.stat button.v{border:0;background:none;width:100%}
+
+/* pips */
+.pips{display:flex;gap:6px;flex-wrap:wrap}
+.pip{width:26px;height:26px;border-radius:50%;border:2px solid var(--gold);background:var(--gold);padding:0}
+.pip.spent{background:transparent;border-color:var(--line)}
+.pip.blue{border-color:var(--blue);background:var(--blue)} .pip.blue.spent{background:transparent;border-color:var(--line)}
+.pip.f{border-color:var(--danger);background:transparent} .pip.f.on{background:var(--danger)}
+.pip.s{border-color:var(--good);background:transparent} .pip.s.on{background:var(--good)}
+.track{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.track .name{font-weight:500}
+.track .hint{grid-column:1/-1;font-size:.85rem;color:var(--muted);margin-top:-4px}
+
+/* attacks */
+.atk{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.atk:first-of-type{border-top:0}
+.atk .meta{font-size:.82rem;color:var(--muted)}
+
+/* roll mode */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 10px;font-size:.85rem}
+.seg button[aria-pressed=true]{background:var(--blue);color:var(--surface)}
+
+/* log */
+.log{display:grid;gap:4px;max-height:220px;overflow:auto;font-size:.88rem}
+.log div{display:flex;gap:8px;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
+.log .t{font-family:var(--mono);font-weight:600}
+
+/* abilities */
+.abil{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (min-width:560px){.abil{grid-template-columns:repeat(6,1fr)}}
+.ab{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;display:grid;gap:4px}
+.ab .score{font-family:var(--mono);font-size:1.3rem;font-weight:600}
+.ab button{border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:2px 0;font-family:var(--mono);font-size:.85rem}
+.ab button.prof{border-color:var(--gold);color:var(--gold)}
+.skills{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:560px){.skills{grid-template-columns:1fr 1fr;column-gap:20px}}
+.sk{display:grid;grid-template-columns:14px 1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--muted)}
+.dot.p{background:var(--gold);border-color:var(--gold)}
+.sk .ab3{font-size:.72rem;color:var(--muted);letter-spacing:.06em}
+.sk .m{font-family:var(--mono);font-weight:600;min-width:2.4em;text-align:right}
+
+/* spells */
+.slots{display:grid;gap:10px}
+.spell-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.lvl-title{display:flex;gap:8px;align-items:baseline;width:100%;margin:8px 0 0;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;text-align:left}
+.lvl-title[aria-expanded=true]{margin-bottom:-6px}
+.lvl-title .chev{color:var(--muted);width:1em}
+.lvl-title .cnt{margin-left:auto;font-size:.88rem;font-weight:600;color:var(--gold);text-align:right}
+.lvl-title .cnt .sub{font-weight:400;color:var(--muted)}
+.sp{border-top:1px solid var(--line);padding:9px 0;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:start}
+.star{border:0;background:none;font-size:1.15rem;line-height:1;padding:2px;color:var(--line)}
+.star.on{color:var(--gold)}
+.star.fixed{color:var(--blue);cursor:default}
+.sp .nm{font-weight:700}
+.sp .tags{display:flex;gap:6px;flex-wrap:wrap;font-size:.78rem;color:var(--muted)}
+.tag{border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.tag.c{border-color:var(--gold);color:var(--gold)}
+.tag.r{border-color:var(--blue);color:var(--blue)}
+.sp .desc{grid-column:2/-1;font-size:.88rem;color:var(--muted)}
+.cast{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+
+/* gear */
+.coins{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.coin{text-align:center}
+.coin input{text-align:center;font-family:var(--mono);padding:7px 2px}
+.inv{display:grid;gap:0}
+.it{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.qty{display:inline-flex;align-items:center;gap:4px}
+.qty span{font-family:var(--mono);min-width:2ch;text-align:center}
+.qty button{width:28px;height:28px;border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:0}
+.it .x{border:0;background:none;color:var(--muted);padding:0 4px}
+
+.lore p{margin:.4em 0;max-width:65ch}
+.feat{border-top:1px solid var(--line);padding:9px 0}
+.feat b{display:block}
+.feat span{font-size:.9rem;color:var(--muted)}
+
+/* tabbar */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+nav button{border:0;background:none;padding:6px 2px;border-radius:8px;font-size:.8rem;display:grid;justify-items:center;gap:2px;color:var(--muted)}
+nav button svg{width:22px;height:22px}
+nav button[aria-current=true]{color:var(--blue);background:var(--blue-soft)}
+
+/* toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;
+  background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;min-width:200px;max-width:calc(100% - 32px);text-align:center;box-shadow:0 6px 24px rgb(0 0 0 / .25)}
+#toast .big{font-family:var(--mono);font-size:1.8rem;font-weight:600;display:block}
+#toast .crit{color:var(--gold)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <svg class="crest" viewBox="0 0 54 66" aria-hidden="true">
+    <path d="M4 4h46v26c0 17-11 27-23 32C15 57 4 47 4 30z" fill="var(--blue)"/>
+    <path d="M8 8h38v22c0 14-9 22-19 27C17 52 8 44 8 30z" fill="none" stroke="var(--surface)" stroke-width="1.5" opacity=".6"/>
+    <path d="M27 15v30M18 26h18" stroke="var(--surface)" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="27" cy="26" r="11" fill="none" stroke="var(--gold)" stroke-width="2"/>
+  </svg>
+  <div class="who">
+    <h1>Alden Vaelon III</h1>
+    <div class="sub">Human Cleric 4 · Life Domain · Soldier</div>
+    <div class="title">Lord of House Harrowmont, Bearer of the Silver Standard</div>
+  </div>
+  <div class="status" id="status"></div>
+</header>
+
+<main id="view"></main>
+</div>
+
+<nav aria-label="Sections"><div class="in" id="tabs"></div></nav>
+<div id="toast" hidden></div>
+
+<script>
+const PB=2, WIS=4, DC=14, SA=6;
+const ABIL=[["STR","Strength",20,5,false],["DEX","Dexterity",13,1,false],["CON","Constitution",16,3,false],["INT","Intelligence",11,0,false],["WIS","Wisdom",18,6,true],["CHA","Charisma",9,1,true]];
+const SKILLS=[["Acrobatics","DEX",1,0],["Animal Handling","WIS",4,0],["Arcana","INT",4,0],["Athletics","STR",7,1],["Deception","CHA",-1,0],["History","INT",0,0],["Insight","WIS",6,1],["Intimidation","CHA",1,1],["Investigation","INT",0,0],["Medicine","WIS",6,1],["Nature","INT",0,0],["Perception","WIS",4,0],["Performance","CHA",-1,0],["Persuasion","CHA",-1,0],["Religion","INT",6,1],["Sleight of Hand","DEX",1,0],["Stealth","DEX",1,0],["Survival","WIS",4,0]];
+const ATTACKS=[
+  {n:"Spear, +1",hit:8,dmg:"1d6+6",type:"piercing",meta:"Thrown 20/60 · Versatile · Sap"},
+  {n:"Javelin",hit:7,dmg:"1d6+5",type:"piercing",meta:"Thrown 30/120 · Slow"},
+  {n:"Longsword",hit:5,dmg:"1d8+5",type:"slashing",meta:"Versatile · Sap"},
+  {n:"Unarmed Strike",hit:7,dmg:"6",type:"bludgeoning",meta:"Flat damage"}
+];
+// [name, level, source, save/atk, time, range, duration, conc, ritual, domain, summary, roll]
+const SPELLS=[
+ ["Light",0,"Cleric","—","1A","Touch","1 hour",0,0,0,"An object sheds bright light in a 20 ft radius."],
+ ["Guidance",0,"Cleric","—","1A","Touch","1 min",1,0,0,"A willing creature adds 1d4 to one ability check."],
+ ["Toll the Dead",0,"Cleric","WIS 14","1A","60 ft","Instant",0,0,0,"1d8 necrotic, or 1d12 if the target is already hurt.",{dmg:"1d8",alt:"1d12",type:"necrotic"}],
+ ["Sacred Flame",0,"Cleric","DEX 14","1A","60 ft","Instant",0,0,0,"Radiant flame; cover doesn't help the target.",{dmg:"1d8",type:"radiant"}],
+ ["Word of Radiance",0,"Magic Initiate","CON 14","1A","5 ft aura","Instant",0,0,0,"Creatures you choose around you take radiant damage.",{dmg:"1d6",type:"radiant"}],
+ ["Spare the Dying",0,"Magic Initiate","—","1A","15 ft","Instant",0,0,0,"Stabilise a creature at 0 HP."],
+ ["Thaumaturgy",0,"Divine Order","—","1A","30 ft","1 min",0,0,0,"Minor wonders: booming voice, tremors, flickering flames."],
+ ["Cure Wounds",1,"Domain","—","1A","Touch","Instant",0,0,1,"Heal 2d8 + WIS (+2d8 per slot above 1st).",{heal:"2d8",up:"2d8"}],
+ ["Bless",1,"Domain","—","1A","30 ft","1 min",1,0,1,"Up to 3 creatures add 1d4 to attack rolls and saves."],
+ ["Guiding Bolt",1,"Cleric","+6","1A","120 ft","1 round",0,0,0,"4d6 radiant; next attack on the target has advantage.",{atk:SA,dmg:"4d6",up:"1d6",type:"radiant"}],
+ ["Healing Word",1,"Cleric","—","1BA","60 ft","Instant",0,0,0,"Heal 2d4 + WIS at range (+2d4 per slot above 1st).",{heal:"2d4",up:"2d4"}],
+ ["Shield of Faith",1,"Cleric","—","1BA","60 ft","10 min",1,0,0,"+2 AC to one creature."],
+ ["Command",1,"Cleric","WIS 14","1A","60 ft","Instant",0,0,0,"A one-word command the target must obey on its turn."],
+ ["Sanctuary",1,"Cleric","WIS 14","1BA","30 ft","1 min",0,0,0,"Attackers must save or pick another target."],
+ ["Bane",1,"Cleric","CHA 14","1A","30 ft","1 min",1,0,0,"Up to 3 creatures subtract 1d4 from attacks and saves."],
+ ["Inflict Wounds",1,"Cleric","CON 14","1A","Touch","Instant",0,0,0,"2d10 necrotic, half on a save (+1d10 per slot above 1st).",{dmg:"2d10",up:"1d10",type:"necrotic"}],
+ ["Protection from Evil and Good",1,"Cleric","—","1A","Touch","10 min",1,0,0,"Wards a creature against aberrations, fiends, undead and the like."],
+ ["Detect Evil and Good",1,"Cleric","—","1A","Self 30 ft","10 min",1,0,0,"Sense aberrations, celestials, fiends and undead nearby."],
+ ["Detect Magic",1,"Cleric","—","1A","Self 30 ft","10 min",1,1,0,"Sense magic within 30 ft."],
+ ["Detect Poison and Disease",1,"Cleric","—","1A","Self 30 ft","10 min",1,1,0,"Sense poisons, poisonous creatures and disease."],
+ ["Purify Food and Drink",1,"Cleric","—","1A","10 ft","Instant",0,1,0,"Make food and drink safe."],
+ ["Create or Destroy Water",1,"Cleric","—","1A","30 ft","Instant",0,0,0,"Make or remove up to 10 gallons of water."],
+ ["Ceremony",1,"Cleric","—","1h","Touch","Instant",0,1,0,"Religious rites: blessing water, marriage, funeral and more."],
+ ["Doom of Poor Fortune",1,"Cleric","CHA 14","1A","30 ft","1 min",1,0,0,""],
+ ["Emerald Goblet",1,"Cleric","—","1A","Touch","24 hours",0,0,0,""],
+ ["Fireflies",1,"Cleric","—","1A","60 ft","1 hour",0,0,0,""],
+ ["Wardaway",1,"Cleric","CON 14","1A","60 ft","Instant",0,0,0,""],
+ ["Blue Dragon Infusion",1,"Cleric","—","1BA","Self","Instant",0,0,0,""],
+ ["Aid",2,"Domain","—","1A","30 ft","8 hours",0,0,1,"Up to 3 creatures gain +5 max and current HP (+5 per slot above 2nd)."],
+ ["Lesser Restoration",2,"Domain","—","1BA","Touch","Instant",0,0,1,"End one disease or the blinded, deafened, paralysed or poisoned condition."],
+ ["Spiritual Weapon",2,"Cleric","+6","1BA","60 ft","1 min",1,0,0,"Floating weapon; bonus action to move and strike for 1d8 + WIS force.",{atk:SA,dmg:"1d8+4",up:"1d8",type:"force"}],
+ ["Prayer of Healing",2,"Cleric","—","10m","30 ft","Instant",0,0,0,"Up to 5 creatures heal 2d8 + WIS and gain short-rest benefits (+1d8 per slot above 2nd).",{heal:"2d8",up:"1d8"}],
+ ["Hold Person",2,"Cleric","WIS 14","1A","60 ft","1 min",1,0,0,"Paralyse a humanoid; it repeats the save each turn."],
+ ["Silence",2,"Cleric","—","1A","120 ft","10 min",1,1,0,"20 ft sphere of total silence."],
+ ["Calm Emotions",2,"Cleric","CHA 14","1A","60 ft","1 min",1,0,0,"Suppress charm, fear or hostility in a 20 ft sphere."],
+ ["Blindness/Deafness",2,"Cleric","CON 14","1A","120 ft","1 min",0,0,0,"Blind or deafen one creature."],
+ ["Warding Bond",2,"Cleric","—","1A","Touch","1 hour",0,0,0,"Ally gains +1 AC and saves and resistance; you share its damage."],
+ ["Enhance Ability",2,"Cleric","—","1A","Touch","1 hour",1,0,0,"Advantage on checks with one ability."],
+ ["Zone of Truth",2,"Cleric","CHA 14","1A","60 ft","10 min",0,0,0,"Creatures in a 15 ft sphere can't knowingly lie."],
+ ["Augury",2,"Cleric","—","1m","Self","Instant",0,1,0,"Omen of weal or woe for a plan within 30 minutes."],
+ ["Find Traps",2,"Cleric","—","1A","120 ft","Instant",0,0,0,"Sense the presence of traps."],
+ ["Protection from Poison",2,"Cleric","—","1A","Touch","1 hour",0,0,0,"Neutralise a poison; resistance to poison damage."],
+ ["Gentle Repose",2,"Cleric","—","1A","Touch","10 days",0,1,0,"Preserve a corpse from decay and undeath."],
+ ["Locate Object",2,"Cleric","—","1A","Self","10 min",1,0,0,"Sense the direction of a known object."],
+ ["Continual Flame",2,"Cleric","—","1A","Touch","Until dispelled",0,0,0,"A heatless flame that never goes out."],
+ ["Conjure Ferryman",2,"Cleric","—","1A","90 ft","1 hour",1,0,0,""],
+ ["Drayfn's Blunted Blade",2,"Cleric","STR 14","1A","30 ft","1 min",1,0,0,""],
+ ["Ominous Winds",2,"Cleric","CHA 14","1A","60 ft","1 min",1,0,0,""],
+ ["Deryan's Helpful Homunculi",2,"Cleric","—","1A","Self","8 hours",0,1,0,""],
+ ["Searing Orb",2,"Cleric","CON 14 / +6","1A","60 ft","Instant",0,0,0,"10 ft sphere."]
+];
+const MAXSLOTS={1:4,2:3}, PREP_MAX=7, MAXHP=35;
+const INV0=[["Spear, +1",1],["Shield",1],["Chain Shirt",1],["Longsword",1],["Javelin",8],["Flail",1],["Clothes, Common",1],["Backpack",1],["Shadow mastiff collar",2],["Oil",2],["Rations",10],["Rope",1],["Tinderbox",1],["Torch",10],["Waterskin",1],["Caltrops",20],["Crowbar",1],["Silver Drinking Horn (35 gp)",1],["Gemstones, 25 gp",2],["Gems, 10 gp",2],["Rook Spike Spear",1],["Bottles of Brandy",3],["Wolftooth Talisman",1],["Bottle of poison (from Nix)",1]];
+const MY_PREP=["Blue Dragon Infusion","Command","Guiding Bolt","Healing Word","Shield of Faith","Prayer of Healing","Spiritual Weapon"];
+const migrate=()=>{if(!S.prepV){S.prepared=[...MY_PREP];S.prepV=1;}};
+const DEFAULT={hp:MAXHP,temp:0,aid:0,hd:4,ds:{s:0,f:0},insp:true,cd:2,slots:{1:4,2:3},miCure:false,prepared:[...MY_PREP],prepV:1,conc:null,
+  coins:{cp:0,sp:4,ep:0,gp:17,pp:0},inv:INV0.map(([n,q])=>({n,q})),notes:"",log:[]};
+
+let S=structuredClone(DEFAULT), tab="combat", mode="n", pendingRest=null, castOpen=null, COL=[];
+try{COL=JSON.parse(localStorage.getItem("alden-col")||"[]");}catch(e){}
+try{const t=localStorage.getItem("alden-tab"); if(t) tab=t;}catch(e){}
+
+/* ---------- persistence ---------- */
+let dbRef=null, saveWhere="Saved on this device · v1.0.0", saveTimer=null;
+try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();}}catch(e){}
+function save(){
+  try{localStorage.setItem("alden-state",JSON.stringify(S));}catch(e){}
+  clearTimeout(saveTimer);
+  if(dbRef) saveTimer=setTimeout(()=>dbRef.set(JSON.parse(JSON.stringify(S))).catch(()=>{saveWhere="Couldn't sync, saved on this device";renderStatus();}),700);
+}
+(async()=>{
+  try{
+    if(!window.claude?.use) return;
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(!db||!user) return;
+    const id=await user.id(); if(!id) return;
+    const ref=db.doc("data/users/"+id+"/alden");
+    const snap=await ref.get();
+    dbRef=ref;
+    if(snap.exists){S=Object.assign(structuredClone(DEFAULT),snap.data());if(!S.prepV){migrate();ref.set(JSON.parse(JSON.stringify(S))).catch(()=>{});}}
+    else{await ref.set(JSON.parse(JSON.stringify(S)));}
+    saveWhere="Synced to your account";
+    try{localStorage.setItem("alden-state",JSON.stringify(S));}catch(e){}
+    render();
+  }catch(e){}
+})();
+
+/* ---------- dice ---------- */
+const rnd=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n+1;};
+function roll(expr,crit=false){
+  let total=0,parts=[];
+  expr.replace(/\s/g,"").split(/(?=[+-])/).forEach(term=>{
+    const sign=term[0]==="-"?-1:1, t=term.replace(/^[+-]/,"");
+    const m=t.match(/^(\d*)d(\d+)$/);
+    if(m){let c=(+m[1]||1)*(crit?2:1);const rs=[];for(let i=0;i<c;i++)rs.push(rnd(+m[2]));total+=sign*rs.reduce((a,b)=>a+b,0);parts.push("["+rs.join(",")+"]");}
+    else if(t){total+=sign*(+t);parts.push((sign<0?"−":"+")+t);}
+  });
+  return {total,detail:parts.join(" ")};
+}
+function d20(mod){
+  const a=rnd(20),b=rnd(20);
+  const nat=mode==="a"?Math.max(a,b):mode==="d"?Math.min(a,b):a;
+  const shown=mode==="n"?String(a):`${a}, ${b} → ${nat}`;
+  return {nat,total:nat+mod,detail:`d20 (${shown}) ${mod<0?"−":"+"} ${Math.abs(mod)}`};
+}
+function log(label,total,detail,crit){
+  S.log.unshift({l:label,t:total,d:detail});S.log=S.log.slice(0,30);save();
+  const el=document.getElementById("toast");
+  el.innerHTML=`<div>${esc(label)}</div><span class="big ${crit?"crit":""}">${total}</span><small>${esc(detail)}</small>`;
+  el.hidden=false;clearTimeout(el._t);el._t=setTimeout(()=>el.hidden=true,3200);
+  if(tab==="combat") renderLogOnly();
+}
+function check(label,mod){const r=d20(mod);log(label,r.total,r.detail+(r.nat===20?" · natural 20":r.nat===1?" · natural 1":""),r.nat===20);}
+function attack(name,hit,dmg,type){
+  const r=d20(hit),crit=r.nat===20;
+  const d=/d/.test(dmg)?roll(dmg,crit):{total:+dmg,detail:dmg};
+  log(`${name}: ${r.total} to hit${crit?" · CRIT":r.nat===1?" · miss":""}`,d.total+" "+type,`${r.detail} | dmg ${d.detail}`,crit);
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sgn=n=>(n>=0?"+":"−")+Math.abs(n);
+
+/* ---------- actions ---------- */
+const maxHP=()=>MAXHP+S.aid;
+function damage(n){if(!(n>0))return;let r=n;const t=Math.min(S.temp,r);S.temp-=t;r-=t;S.hp=Math.max(0,S.hp-r);if(S.hp>0)S.ds={s:0,f:0};save();render();}
+function heal(n){if(!(n>0))return;S.hp=Math.min(maxHP(),S.hp+n);S.ds={s:0,f:0};save();render();}
+function shortRest(){if(S.cd<2)S.cd++;save();render();toastMsg("Short rest: 1 Channel Divinity regained. Spend Hit Dice below.");}
+function longRest(){Object.assign(S,{hp:MAXHP,temp:0,aid:0,ds:{s:0,f:0},insp:true,cd:2,slots:{...MAXSLOTS},miCure:false,conc:null,hd:Math.min(4,S.hd+2)});save();render();toastMsg("Long rest: HP, slots, Channel Divinity, Heroic Inspiration restored.");}
+function toastMsg(m){const el=document.getElementById("toast");el.innerHTML=`<div>${esc(m)}</div>`;el.hidden=false;clearTimeout(el._t);el._t=setTimeout(()=>el.hidden=true,3200);}
+function spendHD(){if(S.hd<1)return;S.hd--;const r=roll("1d8+3");S.hp=Math.min(maxHP(),S.hp+Math.max(1,r.total));save();render();log("Hit Die (healed)",r.total,r.detail);}
+function castSpell(i,lvl){
+  const sp=SPELLS[i],[name,base,,,,,,conc]=sp,R=sp[11];
+  if(lvl==="mi"){S.miCure=true;}else if(lvl>0){if(S.slots[lvl]<1)return;S.slots[lvl]--;}
+  if(conc)S.conc=name;
+  castOpen=null;
+  const L=lvl==="mi"?1:lvl, up=Math.max(0,L-base);
+  if(name==="Aid"){S.aid=5*(1+up);S.hp+=S.aid;}
+  if(R?.heal){let e=R.heal;for(let k=0;k<up;k++)e+="+"+R.up;e+="+"+WIS;const r=roll(e);const dis=2+L;log(`${name} (level ${L})`,r.total+dis+" HP",`${r.detail} + ${dis} Disciple of Life`);}
+  else if(R?.atk){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const a=d20(R.atk),crit=a.nat===20,d=roll(e,crit);log(`${name}: ${a.total} to hit${crit?" · CRIT":""}`,d.total+" "+R.type,`${a.detail} | dmg ${d.detail}`,crit);}
+  else if(R?.dmg){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const d=roll(e);let msg=d.detail;if(R.alt){const b=roll(R.alt);msg+=` · if hurt: ${b.total} ${b.detail}`;}log(`${name} (DC ${DC})`,d.total+" "+R.type,msg);}
+  else toastMsg(`Cast ${name}${L>0?" at level "+L:""}.`);
+  save();render();
+}
+
+/* ---------- render ---------- */
+const TABS=[["combat","Combat",'<path d="M5 19 19 5M14 5h5v5M5 14l5 5M3 21l3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'],
+ ["spells","Spells",'<path d="M12 3l2.2 5.4L20 9l-4.4 3.8L17 19l-5-3-5 3 1.4-6.2L4 9l5.8-.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
+ ["abilities","Abilities",'<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>'],
+ ["gear","Gear",'<path d="M6 8h12l-1 12H7zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
+ ["lore","Lore",'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>']];
+
+function renderTabs(){document.getElementById("tabs").innerHTML=TABS.map(([k,l,ic])=>`<button data-tab="${k}" aria-current="${tab===k}"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${l}</button>`).join("");}
+function renderStatus(){
+  const hpPct=S.hp/maxHP();
+  document.getElementById("status").innerHTML=
+   `<span class="chip"><b class="num">${S.hp}${S.temp?"+"+S.temp:""}</b>/<span class="num">${maxHP()}</span> HP</span>
+    <span class="chip">AC <b class="num">16</b></span>
+    ${S.conc?`<span class="chip conc">Concentrating: ${esc(S.conc)}<button data-act="dropconc" aria-label="End concentration">✕</button></span>`:""}
+    ${S.hp===0?`<span class="chip" style="border-color:var(--danger);color:var(--danger)">Down: make death saves</span>`:""}
+    <span class="save-state">${saveWhere}</span>`;
+}
+function pips(n,max,act,cls="",label=""){let h="";for(let i=0;i<max;i++)h+=`<button class="pip ${cls} ${i>=n?"spent":""}" data-act="${act}" data-i="${i}" aria-label="${label} ${i+1} of ${max}${i>=n?", spent":""}"></button>`;return `<div class="pips">${h}</div>`;}
+
+function vCombat(){
+  const pct=Math.max(0,S.hp/maxHP()*100),cls=pct<=25?"crit":pct<=50?"low":"";
+  const tp=Math.min(100-pct,S.temp/maxHP()*100);
+  return `<section>
+  <div class="panel hp">
+    <div class="hp-top"><span class="label">Hit points</span><span class="hp-big" aria-live="polite">${S.hp}</span><span class="hp-max">/ ${maxHP()}${S.aid?` (Aid +${S.aid})`:""}</span>${S.temp?`<span class="chip">Temp <b class="num">${S.temp}</b></span>`:""}</div>
+    <div class="bar" aria-hidden="true"><i class="${cls}" style="width:${pct}%"></i><b style="left:${pct}%;width:${tp}%"></b></div>
+    <div class="hp-ctl">
+      <input type="number" id="hpAmt" inputmode="numeric" min="1" placeholder="Amount" aria-label="Amount">
+      <button class="btn dmg" data-act="dmg">Damage</button>
+      <button class="btn heal" data-act="heal">Heal</button>
+      <button class="btn" data-act="temp">Temp</button>
+    </div>
+    ${S.hp===0?`<div class="track"><span class="name">Death saves</span><button class="btn sm" data-act="deathroll">Roll</button>
+      <div class="row" style="grid-column:1/-1"><span class="label">Successes</span>${[0,1,2].map(i=>`<button class="pip s ${i<S.ds.s?"on":""}" data-act="dss" data-i="${i}" aria-label="Success ${i+1}"></button>`).join("")}
+      <span class="label" style="margin-left:10px">Failures</span>${[0,1,2].map(i=>`<button class="pip f ${i<S.ds.f?"on":""}" data-act="dsf" data-i="${i}" aria-label="Failure ${i+1}"></button>`).join("")}</div></div>`:""}
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="label">AC</div><div class="v">16</div></div>
+    <div class="stat"><div class="label">Initiative</div><button class="v" data-act="init">+1</button></div>
+    <div class="stat"><div class="label">Speed</div><div class="v">30<small>ft</small></div></div>
+    <div class="stat"><div class="label">Spell DC</div><div class="v">14</div></div>
+  </div>
+  <div class="row" style="justify-content:space-between"><span class="label">d20 rolls</span>
+    <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Advantage"],["d","Disadvantage"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div></div>
+  <div class="panel">
+    <h2>Attacks</h2>
+    ${ATTACKS.map((a,i)=>`<div class="atk"><div><b>${a.n}</b><div class="meta">${a.dmg} ${a.type} · ${a.meta}</div></div><span class="num">${sgn(a.hit)}</span><button class="btn sm gold" data-act="atk" data-i="${i}">Roll</button></div>`).join("")}
+  </div>
+  <div class="panel track">
+    <span class="name">Channel Divinity</span>${pips(S.cd,2,"cd","","Channel Divinity")}
+    <span class="hint">DC 14. Regain one on a short rest, all on a long rest.</span>
+    <div class="row" style="grid-column:1/-1">
+      <button class="btn sm" data-act="cdspark">Divine Spark</button>
+      <button class="btn sm" data-act="cdpreserve">Preserve Life (20 HP)</button>
+      <button class="btn sm" data-act="cdturn">Turn Undead</button>
+    </div>
+    <span class="name">Heroic Inspiration</span>${pips(S.insp?1:0,1,"insp","blue","Heroic Inspiration")}
+    <span class="hint">Regained on each long rest (Resourceful).</span>
+    <span class="name">Hit Dice <span class="num" style="color:var(--muted)">d8+3</span></span>${pips(S.hd,4,"hdpip","blue","Hit Die")}
+    <div class="row" style="grid-column:1/-1"><button class="btn sm" data-act="hd" ${S.hd<1?"disabled":""}>Spend a Hit Die</button></div>
+  </div>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><h2>Rest</h2>
+    ${pendingRest?`<div class="confirm">${pendingRest==="long"?"Take a long rest?":"Take a short rest?"}<button class="btn sm heal" data-act="restyes">Yes</button><button class="btn sm" data-act="restno">Cancel</button></div>`:
+    `<div class="row"><button class="btn" data-act="short">Short rest</button><button class="btn gold" data-act="long">Long rest</button></div>`}</div>
+  </div>
+  <div class="panel"><div class="row" style="justify-content:space-between"><h2>Roll log</h2>${S.log.length?`<button class="btn sm" data-act="clearlog">Clear</button>`:""}</div><div class="log" id="log"></div></div>
+  </section>`;
+}
+function renderLogOnly(){const el=document.getElementById("log");if(!el)return;el.innerHTML=S.log.length?S.log.map(x=>`<div><span>${esc(x.l)}</span><span class="t">${esc(x.t)}</span></div>`).join(""):`<span class="label" style="text-transform:none;letter-spacing:0">Tap any modifier, attack or spell to roll. Results land here.</span>`;}
+
+function vAbilities(){
+  return `<section>
+  <div class="row" style="justify-content:space-between"><span class="label">Tap a check or save to roll</span>
+    <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Adv"],["d","Dis"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div></div>
+  <div class="abil">${ABIL.map(([k,n,sc,sv,p])=>{const m=Math.floor((sc-10)/2);return `<div class="ab"><span class="label">${k}</span><span class="score">${sc}</span>
+    <button data-act="chk" data-n="${n} check" data-m="${m}" aria-label="${n} check ${sgn(m)}">${sgn(m)}</button>
+    <button class="${p?"prof":""}" data-act="chk" data-n="${n} save" data-m="${sv}" aria-label="${n} save ${sgn(sv)}">save ${sgn(sv)}</button></div>`}).join("")}</div>
+  <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><div class="label">Passive Perc.</div><div class="v">14</div></div>
+    <div class="stat"><div class="label">Passive Insight</div><div class="v">16</div></div>
+    <div class="stat"><div class="label">Passive Invest.</div><div class="v">10</div></div>
+  </div>
+  <div class="panel"><h2>Skills</h2><div class="skills">${SKILLS.map(([n,a,m,p])=>`<button class="sk" data-act="chk" data-n="${n}" data-m="${m}"><span class="dot ${p?"p":""}" aria-hidden="true"></span><span>${n}</span><span class="ab3">${a}</span><span class="m">${sgn(m)}</span></button>`).join("")}</div>
+  <p class="label" style="text-transform:none;letter-spacing:0;margin:10px 0 0">Gold dot = proficient. Arcana and Religion include the Thaumaturge +4.</p></div>
+  <div class="panel"><h2>Proficiencies</h2>
+    <div class="feat"><b>Armour</b><span>Light, medium, shields</span></div>
+    <div class="feat"><b>Weapons</b><span>Simple weapons</span></div>
+    <div class="feat"><b>Tools</b><span>Dice set, vehicles (land)</span></div>
+    <div class="feat"><b>Languages</b><span>Common, Common Sign Language, Elvish</span></div></div>
+  </section>`;
+}
+
+function vSpells(){
+  const prepCount=S.prepared.length;
+  let h=`<section><div class="panel slots">
+    <div class="row" style="justify-content:space-between"><h2>Spell slots</h2><span class="label">DC 14 · Attack +6 · WIS</span></div>
+    <div class="track"><span class="name">1st level</span>${pips(S.slots[1],4,"slot1","","1st-level slot")}
+      <span class="name">2nd level</span>${pips(S.slots[2],3,"slot2","","2nd-level slot")}
+      <span class="name">Magic Initiate: Cure Wounds</span>${pips(S.miCure?0:1,1,"mi","blue","Free Cure Wounds")}
+      <span class="hint">Once per long rest without a slot. Disciple of Life adds 2 + slot level to slot healing.</span></div>
+  </div>
+  <div class="spell-head"><span><b class="num">${SPELLS.filter(s=>s[1]===0).length+4+prepCount}</b> spells ready <span class="label" style="text-transform:none;letter-spacing:0">${prepCount}/${PREP_MAX} chosen + 4 domain + ${SPELLS.filter(s=>s[1]===0).length} cantrips</span></span>
+    <button class="btn sm" data-act="prepfilter">${window._pf?"Show all spells":"Show prepared only"}</button></div>`;
+  for(const L of [0,1,2]){
+    const list=SPELLS.map((s,i)=>[s,i]).filter(([s])=>s[1]===L&&(!window._pf||L===0||s[9]||S.prepared.includes(s[0])));
+    const all=SPELLS.filter(s=>s[1]===L), dom=all.filter(s=>s[9]).length, mine=all.filter(s=>!s[9]&&S.prepared.includes(s[0])).length, shut=COL.includes(L);
+    const cnt=L===0?`${all.length} known`:`${dom+mine} prepared <span class="sub">(${mine} chosen + ${dom} domain)</span>`;
+    h+=`<button class="lvl-title" data-act="col" data-i="${L}" aria-expanded="${!shut}"><span class="chev" aria-hidden="true">${shut?"▸":"▾"}</span><h2>${L===0?"Cantrips":L===1?"1st level":"2nd level"}</h2><span class="cnt">${cnt}</span></button>`;
+    if(shut) continue;
+    h+=`<div class="panel" style="padding-block:4px">`;
+    h+=list.map(([s,i])=>{
+      const [n,lv,src,sa,t,rng,dur,c,r,dom,desc]=s, isPrep=dom||S.prepared.includes(n);
+      const star=L===0?`<span class="star fixed" aria-hidden="true">✦</span>`:dom?`<span class="star fixed" title="Always prepared">★</span>`:`<button class="star ${isPrep?"on":""}" data-act="prep" data-n="${esc(n)}" aria-label="${isPrep?"Unprepare":"Prepare"} ${esc(n)}" aria-pressed="${isPrep}">★</button>`;
+      let cast="";
+      if(L===0) cast=`<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="0">${s[11]?"Roll":"Cast"}</button>`;
+      else if(isPrep||(n==="Cure Wounds")){
+        if(castOpen===i){cast=`<div class="cast">${[1,2].filter(l=>l>=lv).map(l=>`<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="${l}" ${S.slots[l]<1?"disabled":""}>Lv ${l} (${S.slots[l]})</button>`).join("")}${n==="Cure Wounds"&&!S.miCure?`<button class="btn sm" data-act="cast" data-i="${i}" data-l="mi">Free</button>`:""}<button class="btn sm" data-act="castclose" aria-label="Cancel">✕</button></div>`;}
+        else cast=`<button class="btn sm gold" data-act="castopen" data-i="${i}">Cast</button>`;
+      }
+      return `<div class="sp">${star}<div><div class="nm">${esc(n)}</div><div class="tags"><span>${t}</span><span>${rng}</span><span>${dur}</span>${sa!=="—"?`<span>${sa}</span>`:""}${c?`<span class="tag c">Conc</span>`:""}${r?`<span class="tag r">Ritual</span>`:""}<span>${src}</span></div></div>${cast}${desc?`<div class="desc">${esc(desc)}</div>`:""}</div>`;
+    }).join("")||`<p class="label" style="text-transform:none;letter-spacing:0">No prepared spells at this level yet. Tap ★ in the full list.</p>`;
+    h+=`</div>`;
+  }
+  return h+`</section>`;
+}
+
+function vGear(){
+  const wt=S.inv.length;
+  return `<section>
+  <div class="panel"><h2>Coin</h2><div class="coins" style="margin-top:10px">${["cp","sp","ep","gp","pp"].map(c=>`<label class="coin"><span class="label">${c}</span><input type="number" id="coin-${c}" data-coin="${c}" value="${S.coins[c]}" inputmode="numeric"></label>`).join("")}</div></div>
+  <div class="panel"><div class="row" style="justify-content:space-between"><h2>Pack</h2><span class="label">108 lb carried per sheet</span></div>
+    <div class="inv">${S.inv.map((it,i)=>`<div class="it"><span>${esc(it.n)}</span><div class="qty"><button data-act="qm" data-i="${i}" aria-label="One fewer ${esc(it.n)}">−</button><span>${it.q}</span><button data-act="qp" data-i="${i}" aria-label="One more ${esc(it.n)}">+</button><button class="x" data-act="qx" data-i="${i}" aria-label="Remove ${esc(it.n)}">✕</button></div></div>`).join("")}</div>
+    <div class="hp-ctl" style="grid-template-columns:1fr auto;margin-top:10px"><input type="text" id="newItem" placeholder="Add an item"><button class="btn" data-act="additem">Add</button></div>
+  </div>
+  <div class="panel"><h2>Session notes</h2><textarea id="notes" style="margin-top:10px" placeholder="Names, debts, rumours, what Nix is up to…">${esc(S.notes)}</textarea></div>
+  </section>`;
+}
+
+function vLore(){
+  return `<section class="lore">
+  <div class="panel"><h2>Sir Alden Vaelon the Third</h2>
+    <p>A seasoned fighter drafted into the Blight War, who stood for the honour of Castoria and has seen a great deal of suffering. The crown gave him the Harrowmont estate in thanks for his service. He gave almost all of it up when his wife and daughter died.</p>
+    <p>He hates his official title. He walked east into the mountains to clear his head and leave the city behind, and found refuge in a church. When the local priest fell fatally ill, Alden ended up leading the congregation and caring for the townsfolk.</p>
+    <p>He was not a religious man and does not feel worthy of the role, but someone had to take it up. Perhaps it is penance for years of killing. Over time his resolve has softened, and he has found truth in the holy texts he had to consult when people came to him with questions.</p>
+    <p class="label" style="text-transform:none;letter-spacing:0">Open threads from the sheet: where he's from, which town the church is in (Coldheath or a nearby village?), and whether he multiclasses into Fighter.</p></div>
+  <div class="panel"><h2>Features</h2>
+    <div class="feat"><b>Disciple of Life</b><span>Slot healing restores an extra 2 + the slot's level.</span></div>
+    <div class="feat"><b>Channel Divinity (2 / long rest)</b><span>Regain one use on a short rest. Divine Spark, Turn Undead, Preserve Life.</span></div>
+    <div class="feat"><b>Preserve Life</b><span>Magic action: share 20 HP among Bloodied creatures within 30 ft, up to half their max HP.</span></div>
+    <div class="feat"><b>Thaumaturge</b><span>Extra cantrip; add WIS (+4) to Arcana and Religion.</span></div>
+    <div class="feat"><b>Magic Initiate (Cleric)</b><span>Word of Radiance, Spare the Dying, and Cure Wounds once per long rest free.</span></div>
+    <div class="feat"><b>Resourceful · Skillful · Versatile</b><span>Heroic Inspiration on each long rest; one extra skill; an Origin feat.</span></div>
+    <div class="feat"><b>Ability Score Improvement</b><span>Taken at 4th level into Wisdom.</span></div>
+  </div>
+  </section>`;
+}
+
+function render(){
+  renderTabs();renderStatus();
+  const v=document.getElementById("view");
+  v.innerHTML={combat:vCombat,spells:vSpells,abilities:vAbilities,gear:vGear,lore:vLore}[tab]();
+  if(tab==="combat")renderLogOnly();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab],[data-mode],[data-act]");if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;try{localStorage.setItem("alden-tab",tab)}catch(e){};render();scrollTo(0,0);return;}
+  if(t.dataset.mode){mode=t.dataset.mode;render();return;}
+  const a=t.dataset.act,i=+t.dataset.i,amt=()=>+document.getElementById("hpAmt").value;
+  switch(a){
+    case"dmg":damage(amt());break;
+    case"heal":heal(amt());break;
+    case"temp":{const n=amt();if(n>0){S.temp=Math.max(S.temp,n);save();render();}break;}
+    case"init":check("Initiative",1);break;
+    case"atk":{const x=ATTACKS[i];attack(x.n,x.hit,x.dmg,x.type);break;}
+    case"chk":check(t.dataset.n,+t.dataset.m);break;
+    case"cd":S.cd=i<S.cd?i:i+1;save();render();break;
+    case"insp":S.insp=!S.insp;save();render();break;
+    case"hdpip":S.hd=i<S.hd?i:i+1;save();render();break;
+    case"hd":spendHD();break;
+    case"cdspark":if(S.cd>0){S.cd--;const r=roll("1d8+4");save();render();log("Divine Spark (heal or CON 14 for half)",r.total,r.detail);}break;
+    case"cdpreserve":if(S.cd>0){S.cd--;save();render();toastMsg("Preserve Life: share 20 HP among Bloodied allies within 30 ft.");}break;
+    case"cdturn":if(S.cd>0){S.cd--;save();render();toastMsg("Turn Undead: undead within 30 ft make a WIS 14 save.");}break;
+    case"short":case"long":pendingRest=a;render();break;
+    case"restno":pendingRest=null;render();break;
+    case"restyes":{const r=pendingRest;pendingRest=null;r==="long"?longRest():shortRest();break;}
+    case"dss":S.ds.s=i<S.ds.s?i:i+1;save();render();break;
+    case"dsf":S.ds.f=i<S.ds.f?i:i+1;save();render();break;
+    case"deathroll":{const n=rnd(20);if(n===20){S.hp=1;S.ds={s:0,f:0};}else if(n===1)S.ds.f=Math.min(3,S.ds.f+2);else if(n>=10)S.ds.s=Math.min(3,S.ds.s+1);else S.ds.f=Math.min(3,S.ds.f+1);save();render();log("Death save",n,n===20?"Natural 20: back up at 1 HP":n===1?"Natural 1: two failures":n>=10?"Success":"Failure",n===20);break;}
+    case"clearlog":S.log=[];save();renderLogOnly();render();break;
+    case"dropconc":S.conc=null;save();render();break;
+    case"slot1":S.slots[1]=i<S.slots[1]?i:i+1;save();render();break;
+    case"slot2":S.slots[2]=i<S.slots[2]?i:i+1;save();render();break;
+    case"mi":S.miCure=!S.miCure;save();render();break;
+    case"prep":{const n=t.dataset.n,k=S.prepared.indexOf(n);if(k>=0)S.prepared.splice(k,1);else if(S.prepared.length<PREP_MAX)S.prepared.push(n);else{toastMsg(`You can prepare ${PREP_MAX}. Unprepare one first.`);break;}save();render();break;}
+    case"col":{const k=COL.indexOf(i);k>=0?COL.splice(k,1):COL.push(i);try{localStorage.setItem("alden-col",JSON.stringify(COL))}catch(e){};render();break;}
+    case"prepfilter":window._pf=!window._pf;render();break;
+    case"castopen":castOpen=i;render();break;
+    case"castclose":castOpen=null;render();break;
+    case"cast":{const l=t.dataset.l;castSpell(i,l==="mi"?"mi":+l);break;}
+    case"qp":S.inv[i].q++;save();render();break;
+    case"qm":S.inv[i].q=Math.max(0,S.inv[i].q-1);save();render();break;
+    case"qx":S.inv.splice(i,1);save();render();break;
+    case"additem":{const el=document.getElementById("newItem"),v=el.value.trim();if(v){S.inv.push({n:v,q:1});save();render();}break;}
+  }
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="notes"){S.notes=e.target.value;save();}
+  if(e.target.dataset.coin){S.coins[e.target.dataset.coin]=Math.max(0,+e.target.value||0);save();}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="newItem")document.querySelector('[data-act="additem"]').click();});
+render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
