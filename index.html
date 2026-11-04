@@ -270,28 +270,49 @@ try{COL=JSON.parse(localStorage.getItem("alden-col")||"[]");}catch(e){}
 try{const t=localStorage.getItem("alden-tab"); if(t) tab=t;}catch(e){}
 
 /* ---------- persistence ---------- */
-let dbRef=null, saveWhere="Saved on this device · v1.0.0", saveTimer=null;
-try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();}}catch(e){}
+// Paste the Firebase web config here (same project as Meal Rota is fine). Leave null to save on this device only.
+const FIREBASE_CONFIG=null;
+const FB_PATH="aldenvaelon/state";
+const VERSION="v1.1.0";
+let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
+let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
+try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
+function setStatus(t){saveWhere=t+" · "+VERSION;renderStatus();}
 function save(){
-  try{localStorage.setItem("alden-state",JSON.stringify(S));}catch(e){}
+  lastAt=Date.now();
+  try{localStorage.setItem("alden-state",JSON.stringify(S));localStorage.setItem("alden-at",String(lastAt));}catch(e){}
   clearTimeout(saveTimer);
-  if(dbRef) saveTimer=setTimeout(()=>dbRef.set(JSON.parse(JSON.stringify(S))).catch(()=>{saveWhere="Couldn't sync, saved on this device";renderStatus();}),700);
+  if(fbRef) saveTimer=setTimeout(()=>fbRef.set({json:JSON.stringify(S),at:lastAt,by:device})
+    .then(()=>setStatus("Synced"))
+    .catch(e=>setStatus("Sync failed: "+(e.code||e.message||"error")+", saved on this device")),700);
 }
+function loadScript(src){return new Promise((ok,no)=>{const t=document.createElement("script");t.src=src;t.onload=ok;t.onerror=no;document.head.appendChild(t);});}
 (async()=>{
+  if(!FIREBASE_CONFIG) return;
   try{
-    if(!window.claude?.use) return;
-    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
-    if(!db||!user) return;
-    const id=await user.id(); if(!id) return;
-    const ref=db.doc("data/users/"+id+"/alden");
-    const snap=await ref.get();
-    dbRef=ref;
-    if(snap.exists){S=Object.assign(structuredClone(DEFAULT),snap.data());if(!S.prepV){migrate();ref.set(JSON.parse(JSON.stringify(S))).catch(()=>{});}}
-    else{await ref.set(JSON.parse(JSON.stringify(S)));}
-    saveWhere="Synced to your account";
-    try{localStorage.setItem("alden-state",JSON.stringify(S));}catch(e){}
-    render();
-  }catch(e){}
+    setStatus("Connecting…");
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js");
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const ref=firebase.database().ref(FB_PATH);
+    ref.on("value",snap=>{
+      fbRef=ref;
+      const v=snap.val();
+      if(!v||!v.json){ // first device to connect seeds the cloud copy
+        if(!v) ref.set({json:JSON.stringify(S),at:lastAt||Date.now(),by:device}).then(()=>setStatus("Synced")).catch(e=>setStatus("Sync failed: "+(e.code||e.message)));
+        return;
+      }
+      if(v.by===device&&v.at===lastAt){setStatus("Synced");return;}
+      if(v.at>lastAt){
+        try{S=Object.assign(structuredClone(DEFAULT),JSON.parse(v.json));migrate();}catch(e){return;}
+        lastAt=v.at;
+        try{localStorage.setItem("alden-state",JSON.stringify(S));localStorage.setItem("alden-at",String(lastAt));}catch(e){}
+        saveWhere="Synced · "+VERSION;
+        if(document.activeElement?.id==="notes") renderStatus(); else render();
+      }else if(v.at<lastAt){save();}
+      else setStatus("Synced");
+    },e=>setStatus("Sync failed: "+(e.code||e.message||"error")+", saved on this device"));
+  }catch(e){setStatus("Couldn't load sync, saved on this device");}
 })();
 
 /* ---------- dice ---------- */
