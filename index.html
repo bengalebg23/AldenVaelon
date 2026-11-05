@@ -308,7 +308,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.3.0";
+const VERSION="v1.3.1";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -377,9 +377,13 @@ function log(label,total,detail,crit){
   if(tab==="combat") renderLogOnly();
 }
 function check(label,mod){const r=d20(mod);log(label,r.total,r.detail+(r.nat===20?" · natural 20":r.nat===1?" · natural 1":""),r.nat===20);}
-function attack(name,hit,dmg,type){
+function attack(name,hit,dmg,type,weapon){
   const r=d20(hit),crit=r.nat===20;
-  const d=/d/.test(dmg)?roll(dmg,crit):{total:+dmg,detail:dmg};
+  let d=/d/.test(dmg)?roll(dmg,crit):{total:+dmg,detail:dmg};
+  if(weapon&&/d/.test(dmg)){ // Savage Attacker: roll the weapon's damage dice twice, keep either (once per turn; Alden only makes one weapon attack per turn)
+    const d2=roll(dmg,crit), best=d2.total>d.total?d2:d, other=best===d2?d:d2;
+    d={total:best.total,detail:`${best.detail} (Savage Attacker, other roll ${other.total})`};
+  }
   log(`${name}: ${r.total} to hit${crit?" · CRIT":r.nat===1?" · miss":""}`,d.total+" "+type,`${r.detail} | dmg ${d.detail}`,crit);
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -562,15 +566,15 @@ const ACTS=[
  {cat:"b",n:"Sanctuary",spell:"Sanctuary",econ:"Bonus action · 1st slot",stat:"WIS 14",val:"",rng:"30 ft",note:"Anyone targeting the warded creature with an attack or harmful spell must save or pick a new target. Ends if the warded creature attacks, casts a spell or deals damage."},
  {cat:"b",n:"Lesser Restoration",spell:"Lesser Restoration",econ:"Bonus action · 2nd slot",stat:"Cure",val:"",rng:"Touch",note:"End one disease, or the Blinded, Deafened, Paralyzed or Poisoned condition."},
  {cat:"b",n:"Blue Dragon Infusion",spell:"Blue Dragon Infusion",econ:"Bonus action · 1st slot · after a melee hit",stat:"Extra",val:"2d8 (3d8 vs Fiend/Undead)",rng:"Self",note:"Cast immediately after you hit with a melee weapon or an Unarmed Strike. The target takes the extra damage from that attack. +1d8 for each slot level above 1st. D&D Beyond's rules text says radiant but its damage tag says lightning, so check which one your DM uses."},
- {cat:"m",n:"Spear, +1",econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"Magic +1 spear. Two-handed it deals 1d8+6, but not while you hold your shield.",roll:{hit:8,dmg:"1d6+6",type:"piercing"},roll2:{label:"2-hand",hit:8,dmg:"1d8+6",type:"piercing"}},
- {cat:"m",n:"Javelin (melee)",econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"5 ft",note:"Simple weapon, so you add proficiency.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
- {cat:"m",n:"Longsword",econ:"Action",stat:"+5",val:"1d8+5 slashing",rng:"5 ft",note:"Martial weapon. Clerics aren't proficient, so no proficiency bonus to hit. Two-handed 1d10+5.",roll:{hit:5,dmg:"1d8+5",type:"slashing"},roll2:{label:"2-hand",hit:5,dmg:"1d10+5",type:"slashing"}},
- {cat:"m",n:"Flail",econ:"Action",stat:"+5",val:"1d8+5 bludgeoning",rng:"5 ft",note:"Martial weapon, so no proficiency bonus to hit. Same damage as the Longsword one-handed.",roll:{hit:5,dmg:"1d8+5",type:"bludgeoning"}},
+ {cat:"m",n:"Spear, +1",weapon:1,econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"Magic +1 spear. Two-handed it deals 1d8+6, but not while you hold your shield.",roll:{hit:8,dmg:"1d6+6",type:"piercing"},roll2:{label:"2-hand",hit:8,dmg:"1d8+6",type:"piercing"}},
+ {cat:"m",n:"Javelin (melee)",weapon:1,econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"5 ft",note:"Simple weapon, so you add proficiency.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
+ {cat:"m",n:"Longsword",weapon:1,econ:"Action",stat:"+5",val:"1d8+5 slashing",rng:"5 ft",note:"Martial weapon. Clerics aren't proficient, so no proficiency bonus to hit. Two-handed 1d10+5.",roll:{hit:5,dmg:"1d8+5",type:"slashing"},roll2:{label:"2-hand",hit:5,dmg:"1d10+5",type:"slashing"}},
+ {cat:"m",n:"Flail",weapon:1,econ:"Action",stat:"+5",val:"1d8+5 bludgeoning",rng:"5 ft",note:"Martial weapon, so no proficiency bonus to hit. Same damage as the Longsword one-handed.",roll:{hit:5,dmg:"1d8+5",type:"bludgeoning"}},
  {cat:"m",n:"Unarmed Strike",econ:"Action",stat:"+7",val:"6 bludgeoning",rng:"5 ft",note:"Or Grapple or Shove instead of damage: the target makes a STR or DEX save (its choice) against DC 15.",roll:{hit:7,dmg:"6",type:"bludgeoning"}},
  {cat:"m",n:"Inflict Wounds",spell:"Inflict Wounds",econ:"Action · 1st slot",stat:"CON 14",val:"2d10 necrotic",rng:"Touch",note:"Half damage on a successful save. +1d10 for each slot level above 1st."},
  {cat:"m",n:"Word of Radiance",spell:"Word of Radiance",econ:"Action · cantrip",stat:"CON 14",val:"1d6 radiant",rng:"5 ft around you",note:"Hits every creature you choose within 5 ft. No damage on a successful save. Becomes 2d6 at Cleric 5."},
- {cat:"r",n:"Javelin (thrown)",econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"30/120 ft",note:"Disadvantage beyond 30 ft. You carry 8.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
- {cat:"r",n:"Spear, +1 (thrown)",econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"20/60 ft",note:"Your best hit, but you'll need to pick it up again.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
+ {cat:"r",n:"Javelin (thrown)",weapon:1,econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"30/120 ft",note:"Disadvantage beyond 30 ft. You carry 8.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
+ {cat:"r",n:"Spear, +1 (thrown)",weapon:1,econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"20/60 ft",note:"Your best hit, but you'll need to pick it up again.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
  {cat:"r",n:"Guiding Bolt",spell:"Guiding Bolt",econ:"Action · 1st slot",stat:"+6",val:"4d6 radiant",rng:"120 ft",note:"The next attack roll against the target before the end of your next turn has advantage. +1d6 for each slot level above 1st."},
  {cat:"r",n:"Toll the Dead",spell:"Toll the Dead",econ:"Action · cantrip",stat:"WIS 14",val:"1d8 / 1d12 necrotic",rng:"60 ft",note:"d12 if the target is already missing any HP. Becomes 2 dice at Cleric 5."},
  {cat:"r",n:"Sacred Flame",spell:"Sacred Flame",econ:"Action · cantrip",stat:"DEX 14",val:"1d8 radiant",rng:"60 ft",note:"The target gets no benefit from cover. Becomes 2d8 at Cleric 5."},
@@ -578,7 +582,7 @@ const ACTS=[
  {cat:"c",n:"Preserve Life",cd:1,econ:"Action (Magic)",stat:"Heal",val:"20 HP shared",rng:"30 ft",note:"Split 20 HP among Bloodied creatures within 30 ft, which can include you. Nobody goes above half their max HP.",act:"cdpreserve"},
  {cat:"c",n:"Turn Undead",cd:1,econ:"Action (Magic)",stat:"WIS 14",val:"Frightened + Incapacitated",rng:"30 ft",note:"Undead you choose save or are Frightened and Incapacitated for 1 minute and flee from you. Ends on a creature if it takes damage.",act:"cdturn"},
  {cat:"h",n:"Cure Wounds (free cast)",econ:"Action · no slot",stat:"Heal",val:"2d8+4",rng:"Touch",note:"Magic Initiate: once per long rest without a slot. Disciple of Life doesn't apply because no slot is used.",av:()=>S.miCure?[false,"Used"]:[true,"Ready"],btn:ok=>`<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${ok?"":"disabled"}>Cast free</button>`},
- {cat:"x",n:"Opportunity Attack",econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
+ {cat:"x",n:"Opportunity Attack",weapon:1,econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
  {cat:"f",n:"Heroic Inspiration",econ:"No action",stat:"",val:"Reroll one die",rng:"Any roll",note:"Spend it right after any roll (attack, save, check, damage or healing) to reroll one die. You must use the new roll. You regain it on every long rest (Resourceful).",av:()=>S.insp?[true,"Ready"]:[false,"Used"],btn:ok=>`<button class="btn sm ${ok?"gold":""}" data-act="insp">${ok?"Spend":"Regain"}</button>`},
  {cat:"f",n:"Concentration check",econ:"No action",stat:"CON save +3",val:"DC 10 or half damage",rng:"When hit",note:"When you take damage while concentrating, make a CON save: DC 10 or half the damage taken, whichever is higher (max DC 30). Fail and the spell ends.",av:()=>S.conc?[true,"On "+S.conc]:[true,"Not concentrating"],btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Concentration (CON save)" data-m="3">Roll</button>`},
  {cat:"s",n:"Dash",econ:"Action",stat:"",val:"+30 ft",rng:"",note:"Gain extra movement equal to your Speed for this turn."},
@@ -665,8 +669,9 @@ const FEATS=[
  {g:"Human",n:"Versatile",ty:"Always on",ref:"PHB-2024 194",txt:"You gain an Origin feat of your choice.",you:"You took Magic Initiate (Cleric)."},
  {g:"Human",n:"Creature Type, Size and Speed",ty:"Always on",ref:"PHB-2024 194",txt:"You're a Humanoid. Your size is Medium or Small, chosen when you select this species. Your Speed is 30 ft.",you:"Medium Humanoid, 30 ft walking speed."},
  {g:"Feats",n:"Magic Initiate (Cleric)",ty:"1 free cast / long rest",use:"mi",ref:"PHB-2024 201",txt:"Two Cantrips: you learn two cantrips of your choice from the Cleric spell list. Level 1 Spell: choose a level 1 Cleric spell. You always have it prepared, can cast it once without a spell slot, and regain that free cast when you finish a Long Rest. You can also cast it with any spell slots you have. Whenever you gain a level, you can swap one of these spells for another of the same level from the same list.",you:"Cantrips: Word of Radiance and Spare the Dying. Spell: Cure Wounds, free once per long rest. Disciple of Life doesn't add to the free cast because it uses no slot."},
- {g:"Feats",n:"Ability Score Increases",ty:"From your background",ref:"PHB-2024",txt:"When determining your character's ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1.",you:"Already included in your scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."},
- {g:"Background",n:"Soldier",ty:"Always on",ref:"PHB-2024",txt:"Skill proficiencies in Athletics and Intimidation, and a gaming set as a tool proficiency.",you:"Gives your Athletics +7, Intimidation +1 and Dice Set proficiency. In the 2024 rules the Soldier background also grants the Savage Attacker feat. It isn't on your sheet, so check with your DM or D&D Beyond."}
+ {g:"Feats",n:"Savage Attacker",ty:"Once per turn · weapon hits",ref:"PHB-2024 202",txt:"Origin feat from the Soldier background. Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target.",you:"Applied automatically to every weapon Roll button in the app (spear, javelin, longsword, flail, Opportunity Attack). It only rerolls the weapon dice, not the modifier. It doesn't work on your Unarmed Strike (flat 6, not a weapon) or on spell damage like Spiritual Weapon or Blue Dragon Infusion."},
+ {g:"Background",n:"Soldier",ty:"Always on",ref:"PHB-2024",txt:"Skill proficiencies in Athletics and Intimidation, a gaming set as a tool proficiency, ability score increases, and the Savage Attacker feat.",you:"Gives your Athletics +7, Intimidation +1, Dice Set proficiency and Savage Attacker."},
+ {g:"Background",n:"Ability Score Increases",ty:"From your background, not a feat",ref:"PHB-2024",txt:"Every 2024 background lets you increase one score by 2 and a different one by 1, or three scores by 1. D&D Beyond prints it in the features list, but it isn't a feat and doesn't use up a feat choice.",you:"Already included in your scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."}
 ];
 let openF=new Set();
 function featState(f){
@@ -724,7 +729,7 @@ document.addEventListener("click",e=>{
     case"heal":heal(amt());break;
     case"temp":{const n=amt();if(n>0){S.temp=Math.max(S.temp,n);save();render();}break;}
     case"init":check("Initiative",1);break;
-    case"atk":{const x=ATTACKS[i];attack(x.n,x.hit,x.dmg,x.type);break;}
+    case"atk":{const x=ATTACKS[i];attack(x.n,x.hit,x.dmg,x.type,true);break;}
     case"chk":check(t.dataset.n,+t.dataset.m);break;
     case"cd":S.cd=i<S.cd?i:i+1;save();render();break;
     case"insp":S.insp=!S.insp;save();render();break;
@@ -747,7 +752,7 @@ document.addEventListener("click",e=>{
     case"prep":{const n=t.dataset.n,k=S.prepared.indexOf(n);if(k>=0)S.prepared.splice(k,1);else if(S.prepared.length<PREP_MAX)S.prepared.push(n);else{toastMsg(`You can prepare ${PREP_MAX}. Unprepare one first.`);break;}save();render();break;}
     case"col":{const k=COL.indexOf(i);k>=0?COL.splice(k,1):COL.push(i);try{localStorage.setItem("alden-col",JSON.stringify(COL))}catch(e){};render();break;}
     case"acol":{const k=t.dataset.k,j=ACOL.indexOf(k);j>=0?ACOL.splice(j,1):ACOL.push(k);try{localStorage.setItem("alden-acol",JSON.stringify(ACOL))}catch(e){};render();break;}
-    case"atkx":{const o=ACTS[i],r=t.dataset.v==="2"?o.roll2:o.roll;attack(o.n+(t.dataset.v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type);break;}
+    case"atkx":{const o=ACTS[i],r=t.dataset.v==="2"?o.roll2:o.roll;attack(o.n+(t.dataset.v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type,!!o.weapon);break;}
     case"prepfilter":window._pf=!window._pf;render();break;
     case"castopen":castOpen=i;render();break;
     case"castclose":castOpen=null;render();break;
