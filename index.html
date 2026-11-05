@@ -210,7 +210,7 @@ nav button[aria-current=true]{color:var(--blue);background:var(--blue-soft)}
   </svg>
   <div class="who">
     <h1>Alden Vaelon III</h1>
-    <div class="sub">Human Cleric 4 · Life Domain · Soldier</div>
+    <div class="sub">Human Cleric 4 · Life Domain · Soldier · Lawful Good</div>
     <div class="title">Lord of House Harrowmont, Bearer of the Silver Standard</div>
   </div>
   <div class="status" id="status"></div>
@@ -308,7 +308,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.3.3";
+const VERSION="v1.4.0";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -380,7 +380,7 @@ function check(label,mod){const r=d20(mod);log(label,r.total,r.detail+(r.nat===2
 function attack(name,hit,dmg,type,weapon){
   const r=d20(hit),crit=r.nat===20;
   let d=/d/.test(dmg)?roll(dmg,crit):{total:+dmg,detail:dmg};
-  if(false&&weapon&&/d/.test(dmg)){ // Savage Attacker (not on Alden's build: 2014 Soldier background): roll the weapon's damage dice twice, keep either (once per turn; Alden only makes one weapon attack per turn)
+  if(weapon&&/d/.test(dmg)){ // Savage Attacker (2024 Soldier): roll the weapon's damage dice twice, keep either (once per turn; Alden only makes one weapon attack per turn)
     const d2=roll(dmg,crit), best=d2.total>d.total?d2:d, other=best===d2?d:d2;
     d={total:best.total,detail:`${best.detail} (Savage Attacker, other roll ${other.total})`};
   }
@@ -500,7 +500,7 @@ function vAbilities(){
   <div class="panel"><h2>Proficiencies</h2>
     <div class="feat"><b>Armour</b><span>Light, medium, shields</span></div>
     <div class="feat"><b>Weapons</b><span>Simple weapons</span></div>
-    <div class="feat"><b>Tools</b><span>Dice set, vehicles (land)</span></div>
+    <div class="feat"><b>Tools</b><span>Dice set</span></div>
     <div class="feat"><b>Languages</b><span>Common, Common Sign Language, Elvish</span></div></div>
   </section>`;
 }
@@ -668,10 +668,10 @@ const FEATS=[
  {g:"Human",n:"Resourceful",ty:"Heroic Inspiration",use:"insp",act:"insp",ref:"PHB-2024 194",txt:"You gain Heroic Inspiration whenever you finish a Long Rest. Spend it to reroll any one die immediately after you roll it. You must use the new roll.",you:"Works on any die: an attack, a save, damage, or a healing roll."},
  {g:"Human",n:"Skillful",ty:"Always on",ref:"PHB-2024 193",txt:"You gain proficiency in one skill of your choice.",you:"Your proficient skills are Athletics, Insight, Intimidation, Medicine and Religion."},
  {g:"Human",n:"Versatile",ty:"Always on",ref:"PHB-2024 194",txt:"You gain an Origin feat of your choice.",you:"You took Magic Initiate (Cleric)."},
- {g:"Human",n:"Ability Score Increases",ty:"+2 / +1",ref:"PHB-2024",txt:"When determining your character's ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1. None of these can raise a score above 20. With a 2014 background, D&D Beyond attaches this to your species, because older backgrounds don't include ability increases.",you:"You chose Wisdom and Strength. Wisdom 17 + 1 = 18 (+4). Final scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."},
- {g:"Background",n:"Soldier (2014)",ty:"Background",ref:"PHB-2014",txt:"Skill proficiencies in Athletics and Intimidation. Tool proficiencies in one gaming set and vehicles (land). Military Rank: you hold a rank from your soldiering career. Soldiers loyal to your former military organisation still recognise your authority and influence, and defer to you if they are of a lower rank. You can invoke your rank to influence other soldiers and temporarily requisition simple equipment or horses. You can usually gain access to friendly military encampments and fortresses where your rank is recognised.",you:"Athletics +7, Intimidation +1, Dice Set and Vehicles (Land). This older background has no Origin feat, so you don't get Savage Attacker. As a war veteran and Lord of House Harrowmont, Military Rank is worth bringing up with Castorian soldiers."},
+ {g:"Background",n:"Soldier",ty:"2024 background",ref:"PHB-2024 185",txt:"Ability scores: increase Strength, Dexterity or Constitution (+2 to one and +1 to another, or +1 to all three). Skill proficiencies: Athletics and Intimidation. Tool proficiency: one gaming set. Origin feat: Savage Attacker.",you:"Athletics +7, Intimidation +1, Dice Set, and Savage Attacker. Final scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9. In the 2024 rules Humans don't get ability increases; your background provides them."},
  {g:"Human",n:"Creature Type, Size and Speed",ty:"Always on",ref:"PHB-2024 194",txt:"You're a Humanoid. Your size is Medium or Small, chosen when you select this species. Your Speed is 30 ft.",you:"Medium Humanoid, 30 ft walking speed."},
  {g:"Feats",n:"Magic Initiate (Cleric)",ty:"1 free cast / long rest",use:"mi",ref:"PHB-2024 201",txt:"Two Cantrips: you learn two cantrips of your choice from the Cleric spell list. Level 1 Spell: choose a level 1 Cleric spell. You always have it prepared, can cast it once without a spell slot, and regain that free cast when you finish a Long Rest. You can also cast it with any spell slots you have. Whenever you gain a level, you can swap one of these spells for another of the same level from the same list.",you:"Cantrips: Word of Radiance and Spare the Dying. Spell: Cure Wounds, free once per long rest. Disciple of Life doesn't add to the free cast because it uses no slot."},
+ {g:"Feats",n:"Savage Attacker",ty:"Once per turn · weapon hits",ref:"PHB-2024 201",txt:"Origin feat from the Soldier background. Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target.",you:"Applied automatically to every weapon Roll button (spear, javelin, longsword, flail, Opportunity Attack). Only the weapon's dice are rerolled, not the modifier. It doesn't work on your Unarmed Strike (flat 6, not a weapon) or spell damage such as Spiritual Weapon or Blue Dragon Infusion."},
  {g:"Feats",n:"Alert",ty:"Always on · initiative",ref:"PHB-2024 200",txt:"Initiative Proficiency: when you roll initiative, add your Proficiency Bonus to the roll. Initiative Swap: immediately after you roll initiative, you can swap your initiative with one willing ally in the same combat. You can't swap with an ally who is Incapacitated.",you:"Initiative +3 (DEX +1, proficiency +2). Use the swap to let a fast ally act early, or to go first yourself and cast Bless before anyone moves."},
 ];
 let openF=new Set();
