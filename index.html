@@ -261,7 +261,7 @@ const SPELLS=[
  ["Emerald Goblet",1,"Cleric","—","1A","Touch","24 hours",0,0,0,""],
  ["Fireflies",1,"Cleric","—","1A","60 ft","1 hour",0,0,0,""],
  ["Wardaway",1,"Cleric","CON 14","1A","60 ft","Instant",0,0,0,""],
- ["Blue Dragon Infusion",1,"Cleric","—","1BA","Self","Instant",0,0,0,""],
+ ["Blue Dragon Infusion",1,"Cleric","—","1BA","Self","Instant",0,0,0,"Cast right after you hit with a melee weapon or Unarmed Strike: the target takes an extra 2d8 damage, +1d8 if it is a Fiend or Undead. +1d8 per slot level above 1st.",{dmg:"2d8",up:"1d8",type:"lightning",alt:"3d8"}],
  ["Aid",2,"Domain","—","1A","30 ft","8 hours",0,0,1,"Up to 3 creatures gain +5 max and current HP (+5 per slot above 2nd)."],
  ["Lesser Restoration",2,"Domain","—","1BA","Touch","Instant",0,0,1,"End one disease or the blinded, deafened, paralysed or poisoned condition."],
  ["Spiritual Weapon",2,"Cleric","+6","1BA","60 ft","1 min",1,0,0,"Floating weapon; bonus action to move and strike for 1d8 + WIS force.",{atk:SA,dmg:"1d8+4",up:"1d8",type:"force"}],
@@ -308,7 +308,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.2.0";
+const VERSION="v1.2.1";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -402,7 +402,7 @@ function castSpell(i,lvl){
   if(name==="Aid"){S.aid=5*(1+up);S.hp+=S.aid;}
   if(R?.heal){let e=R.heal;for(let k=0;k<up;k++)e+="+"+R.up;e+="+"+WIS;const r=roll(e);const dis=lvl==="mi"?0:2+L;log(`${name} (${lvl==="mi"?"free, Magic Initiate":"level "+L})`,r.total+dis+" HP",r.detail+(dis?` + ${dis} Disciple of Life`:""));}
   else if(R?.atk){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const a=d20(R.atk),crit=a.nat===20,d=roll(e,crit);log(`${name}: ${a.total} to hit${crit?" · CRIT":""}`,d.total+" "+R.type,`${a.detail} | dmg ${d.detail}`,crit);}
-  else if(R?.dmg){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const d=roll(e);let msg=d.detail;if(R.alt){const b=roll(R.alt);msg+=` · if hurt: ${b.total} ${b.detail}`;}log(`${name} (DC ${DC})`,d.total+" "+R.type,msg);}
+  else if(R?.dmg){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const d=roll(e);let msg=d.detail;if(R.alt){let e2=R.alt;for(let k=0;k<up;k++)e2+="+"+R.up;const b=roll(e2);msg+=` · ${name==="Toll the Dead"?"if hurt":"vs Fiend/Undead"}: ${b.total} ${b.detail}`;}log(`${name} (DC ${DC})`,d.total+" "+R.type,msg);}
   else toastMsg(`Cast ${name}${L>0?" at level "+L:""}.`);
   save();render();
 }
@@ -561,7 +561,7 @@ const ACTS=[
  {cat:"b",n:"Shield of Faith",spell:"Shield of Faith",econ:"Bonus action · 1st slot · Conc",stat:"+2 AC",val:"",rng:"60 ft",note:"One creature you choose gets +2 AC for up to 10 minutes while you concentrate."},
  {cat:"b",n:"Sanctuary",spell:"Sanctuary",econ:"Bonus action · 1st slot",stat:"WIS 14",val:"",rng:"30 ft",note:"Anyone targeting the warded creature with an attack or harmful spell must save or pick a new target. Ends if the warded creature attacks, casts a spell or deals damage."},
  {cat:"b",n:"Lesser Restoration",spell:"Lesser Restoration",econ:"Bonus action · 2nd slot",stat:"Cure",val:"",rng:"Touch",note:"End one disease, or the Blinded, Deafened, Paralyzed or Poisoned condition."},
- {cat:"b",n:"Blue Dragon Infusion",spell:"Blue Dragon Infusion",econ:"Bonus action · 1st slot",stat:"",val:"",rng:"Self",note:"Self only, instantaneous. Your sheet doesn't include this spell's rules text, so check D&D Beyond for what it does."},
+ {cat:"b",n:"Blue Dragon Infusion",spell:"Blue Dragon Infusion",econ:"Bonus action · 1st slot · after a melee hit",stat:"Extra",val:"2d8 (3d8 vs Fiend/Undead)",rng:"Self",note:"Cast immediately after you hit with a melee weapon or an Unarmed Strike. The target takes the extra damage from that attack. +1d8 for each slot level above 1st. D&D Beyond's rules text says radiant but its damage tag says lightning, so check which one your DM uses."},
  {cat:"m",n:"Spear, +1",econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"Magic +1 spear. Two-handed it deals 1d8+6, but not while you hold your shield.",roll:{hit:8,dmg:"1d6+6",type:"piercing"},roll2:{label:"2-hand",hit:8,dmg:"1d8+6",type:"piercing"}},
  {cat:"m",n:"Javelin (melee)",econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"5 ft",note:"Simple weapon, so you add proficiency.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
  {cat:"m",n:"Longsword",econ:"Action",stat:"+5",val:"1d8+5 slashing",rng:"5 ft",note:"Martial weapon. Clerics aren't proficient, so no proficiency bonus to hit. Two-handed 1d10+5.",roll:{hit:5,dmg:"1d8+5",type:"slashing"},roll2:{label:"2-hand",hit:5,dmg:"1d10+5",type:"slashing"}},
