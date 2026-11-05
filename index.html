@@ -308,7 +308,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.3.1";
+const VERSION="v1.3.2";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -450,7 +450,7 @@ function vCombat(){
   </div>
   <div class="stats">
     <div class="stat"><div class="label">AC</div><div class="v">16</div></div>
-    <div class="stat"><div class="label">Initiative</div><button class="v" data-act="init">+1</button></div>
+    <div class="stat"><div class="label">Initiative</div><button class="v" data-act="init">+3</button></div>
     <div class="stat"><div class="label">Speed</div><div class="v">30<small>ft</small></div></div>
     <div class="stat"><div class="label">Spell DC</div><div class="v">14</div></div>
   </div>
@@ -584,6 +584,7 @@ const ACTS=[
  {cat:"h",n:"Cure Wounds (free cast)",econ:"Action · no slot",stat:"Heal",val:"2d8+4",rng:"Touch",note:"Magic Initiate: once per long rest without a slot. Disciple of Life doesn't apply because no slot is used.",av:()=>S.miCure?[false,"Used"]:[true,"Ready"],btn:ok=>`<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${ok?"":"disabled"}>Cast free</button>`},
  {cat:"x",n:"Opportunity Attack",weapon:1,econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
  {cat:"f",n:"Heroic Inspiration",econ:"No action",stat:"",val:"Reroll one die",rng:"Any roll",note:"Spend it right after any roll (attack, save, check, damage or healing) to reroll one die. You must use the new roll. You regain it on every long rest (Resourceful).",av:()=>S.insp?[true,"Ready"]:[false,"Used"],btn:ok=>`<button class="btn sm ${ok?"gold":""}" data-act="insp">${ok?"Spend":"Regain"}</button>`},
+ {cat:"f",n:"Initiative",econ:"Start of combat",stat:"+3",val:"",rng:"",note:"Alert adds your proficiency bonus. Straight after rolling you can swap initiative with one willing ally who isn't Incapacitated.",btn:()=>`<button class="btn sm gold" data-act="init">Roll +3</button>`},
  {cat:"f",n:"Concentration check",econ:"No action",stat:"CON save +3",val:"DC 10 or half damage",rng:"When hit",note:"When you take damage while concentrating, make a CON save: DC 10 or half the damage taken, whichever is higher (max DC 30). Fail and the spell ends.",av:()=>S.conc?[true,"On "+S.conc]:[true,"Not concentrating"],btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Concentration (CON save)" data-m="3">Roll</button>`},
  {cat:"s",n:"Dash",econ:"Action",stat:"",val:"+30 ft",rng:"",note:"Gain extra movement equal to your Speed for this turn."},
  {cat:"s",n:"Disengage",econ:"Action",stat:"",val:"",rng:"",note:"Your movement doesn't provoke Opportunity Attacks for the rest of the turn."},
@@ -660,7 +661,7 @@ const FEATS=[
  {g:"Cleric",n:"Spellcasting",ty:"Always on",ref:"PHB-2024 69",txt:"You cast Cleric spells using Wisdom, with a holy symbol as your focus. When you finish a Long Rest you can change which spells you have prepared. A prepared spell with the Ritual tag can be cast as a ritual: it takes 10 minutes longer and uses no spell slot.",you:"Spell save DC 14, spell attack +6. 4 Cleric cantrips, 7 prepared spells of your choice, and 4 × 1st and 3 × 2nd-level slots."},
  {g:"Cleric",n:"Divine Order: Thaumaturge",ty:"Always on",ref:"PHB-2024 70",txt:"You know one extra cantrip from the Cleric spell list. You also add your Wisdom modifier (minimum +1) to your Intelligence (Arcana) and Intelligence (Religion) checks.",you:"Extra cantrip: Thaumaturgy. Arcana +4, Religion +6."},
  {g:"Cleric",n:"Core Cleric Traits",ty:"Always on",ref:"PHB-2024 69",txt:"Hit Die d8 per Cleric level. Saving throw proficiency in Wisdom and Charisma. Training with light armour, medium armour and shields, and proficiency with simple weapons.",you:"35 max HP, 4d8 Hit Dice. WIS save +6, CHA save +1. Longsword and Flail are martial weapons, so they hit at +5 without your proficiency bonus. The Sap and Slow tags on your sheet are weapon mastery properties, which Clerics don't get, so they don't apply."},
- {g:"Cleric",n:"Ability Score Improvement",ty:"Taken at Cleric 4",ref:"PHB-2024 71, 202",txt:"Increase one ability score by 2, or two ability scores by 1 each (maximum 20).",you:"You put this into Wisdom, which is now 18 (+4). Your next feat comes at Cleric 8."},
+ {g:"Cleric",n:"Cleric 4 feat: Alert",ty:"Taken at Cleric 4",ref:"PHB-2024 71",txt:"At Cleric 4 you gain the Ability Score Improvement feat or another feat you qualify for. You took Alert instead of raising a score.",you:"D&D Beyond still lists Ability Score Improvement here, so update it there to Alert. Your next feat comes at Cleric 8."},
  {g:"Life Domain",n:"Disciple of Life",ty:"Always on",ref:"PHB-2024 73",txt:"When a spell you cast with a spell slot restores HP to a creature, that creature regains an additional 2 + the spell slot's level.",you:"+3 HP with a 1st-level slot and +4 with a 2nd, for each creature healed, so Prayer of Healing adds it to every target. It doesn't apply to Divine Spark, cantrips, or the free Magic Initiate Cure Wounds."},
  {g:"Life Domain",n:"Preserve Life",ty:"Action (Magic) · Channel Divinity",use:"cd",act:"cdpreserve",ref:"PHB-2024 73",txt:"As a Magic Action, you can expend a use of your Channel Divinity to restore 20 HP to Bloodied creatures within 30 ft. of yourself (which can include you), and divide the HP among them. This feature can only restore a creature up to half its maximum HP.",you:"Bloodied means at or below half its maximum HP. This is your best emergency heal when several allies are low."},
  {g:"Life Domain",n:"Life Domain Spells",ty:"Always on",ref:"PHB-2024 73",txt:"When you reach a Cleric level specified in the Domain Spells table, you always have the listed spells prepared.",you:"Always prepared: Bless, Cure Wounds, Aid and Lesser Restoration. They don't count towards your 7. At Cleric 5 you add Mass Healing Word and Revivify."},
@@ -669,9 +670,10 @@ const FEATS=[
  {g:"Human",n:"Versatile",ty:"Always on",ref:"PHB-2024 194",txt:"You gain an Origin feat of your choice.",you:"You took Magic Initiate (Cleric)."},
  {g:"Human",n:"Creature Type, Size and Speed",ty:"Always on",ref:"PHB-2024 194",txt:"You're a Humanoid. Your size is Medium or Small, chosen when you select this species. Your Speed is 30 ft.",you:"Medium Humanoid, 30 ft walking speed."},
  {g:"Feats",n:"Magic Initiate (Cleric)",ty:"1 free cast / long rest",use:"mi",ref:"PHB-2024 201",txt:"Two Cantrips: you learn two cantrips of your choice from the Cleric spell list. Level 1 Spell: choose a level 1 Cleric spell. You always have it prepared, can cast it once without a spell slot, and regain that free cast when you finish a Long Rest. You can also cast it with any spell slots you have. Whenever you gain a level, you can swap one of these spells for another of the same level from the same list.",you:"Cantrips: Word of Radiance and Spare the Dying. Spell: Cure Wounds, free once per long rest. Disciple of Life doesn't add to the free cast because it uses no slot."},
+ {g:"Feats",n:"Alert",ty:"Always on · initiative",ref:"PHB-2024 200",txt:"Initiative Proficiency: when you roll initiative, add your Proficiency Bonus to the roll. Initiative Swap: immediately after you roll initiative, you can swap your initiative with one willing ally in the same combat. You can't swap with an ally who is Incapacitated.",you:"Initiative +3 (DEX +1, proficiency +2). Use the swap to put Elyndra or a healer-dependent ally where they're most useful, or to go first yourself and drop Bless before anyone moves."},
  {g:"Feats",n:"Savage Attacker",ty:"Once per turn · weapon hits",ref:"PHB-2024 202",txt:"Origin feat from the Soldier background. Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target.",you:"Applied automatically to every weapon Roll button in the app (spear, javelin, longsword, flail, Opportunity Attack). It only rerolls the weapon dice, not the modifier. It doesn't work on your Unarmed Strike (flat 6, not a weapon) or on spell damage like Spiritual Weapon or Blue Dragon Infusion."},
  {g:"Background",n:"Soldier",ty:"Always on",ref:"PHB-2024",txt:"Skill proficiencies in Athletics and Intimidation, a gaming set as a tool proficiency, ability score increases, and the Savage Attacker feat.",you:"Gives your Athletics +7, Intimidation +1, Dice Set proficiency and Savage Attacker."},
- {g:"Background",n:"Ability Score Increases",ty:"From your background, not a feat",ref:"PHB-2024",txt:"Every 2024 background lets you increase one score by 2 and a different one by 1, or three scores by 1. D&D Beyond prints it in the features list, but it isn't a feat and doesn't use up a feat choice.",you:"Already included in your scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."}
+ {g:"Background",n:"Ability Score Increases",ty:"From your background, not a feat",ref:"PHB-2024",txt:"Every 2024 background lets you increase one score by 2 and a different one by 1, or three scores by 1. D&D Beyond prints it in the features list, but it isn't a feat and doesn't use up a feat choice.",you:"Your Wisdom is 17 plus 1 from this increase, making 18 (+4). In the 2024 rules Humans don't get ability increases; this comes from the Soldier background. Final scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."}
 ];
 let openF=new Set();
 function featState(f){
@@ -728,7 +730,7 @@ document.addEventListener("click",e=>{
     case"dmg":damage(amt());break;
     case"heal":heal(amt());break;
     case"temp":{const n=amt();if(n>0){S.temp=Math.max(S.temp,n);save();render();}break;}
-    case"init":check("Initiative",1);break;
+    case"init":check("Initiative",3);break;
     case"atk":{const x=ATTACKS[i];attack(x.n,x.hit,x.dmg,x.type,true);break;}
     case"chk":check(t.dataset.n,+t.dataset.m);break;
     case"cd":S.cd=i<S.cd?i:i+1;save();render();break;
