@@ -162,7 +162,14 @@ textarea{min-height:110px;resize:vertical}
 .ac .line{display:flex;gap:6px 10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);align-items:baseline}
 .ac .line b{font-family:var(--mono);font-weight:600;color:var(--ink)}
 .ac .note{grid-column:1/-1;font-size:.86rem;color:var(--muted);max-width:65ch}
-.ac .btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ac .btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.hidebtn{border:0;background:none;color:var(--muted);font-size:.78rem;padding:4px 2px;text-decoration:underline;text-underline-offset:2px}
+.ac.hiddenrow{opacity:.45}
+.subhead{padding:12px 0 2px;border-top:1px solid var(--line)}
+.subhead:first-child{border-top:0;padding-top:8px}
+.subhead+.ac{border-top:0}
+.seg.filt{display:flex;width:100%}
+.seg.filt button{flex:1;padding:7px 2px}
 .st{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.04em;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);white-space:nowrap}
 .st.ok{color:var(--good);border-color:var(--good)}
 .st.pas{color:var(--blue);border-color:var(--blue)}
@@ -289,7 +296,7 @@ const MAXSLOTS={1:4,2:3}, PREP_MAX=7, MAXHP=35;
 const INV0=[["Spear, +1",1],["Shield",1],["Chain Shirt",1],["Longsword",1],["Javelin",8],["Flail",1],["Clothes, Common",1],["Backpack",1],["Shadow mastiff collar",2],["Oil",2],["Rations",10],["Rope",1],["Tinderbox",1],["Torch",10],["Waterskin",1],["Caltrops",20],["Crowbar",1],["Silver Drinking Horn (35 gp)",1],["Gemstones, 25 gp",2],["Gems, 10 gp",2],["Rook Spike Spear",1],["Bottles of Brandy",3],["Wolftooth Talisman",1],["Bottle of poison (from Nix)",1]];
 const MY_PREP=["Blue Dragon Infusion","Command","Guiding Bolt","Healing Word","Shield of Faith","Prayer of Healing","Spiritual Weapon"];
 const migrate=()=>{if(!S.prepV){S.prepared=[...MY_PREP];S.prepV=1;}};
-const DEFAULT={hp:MAXHP,temp:0,aid:0,hd:4,ds:{s:0,f:0},insp:true,cd:2,slots:{1:4,2:3},miCure:false,prepared:[...MY_PREP],prepV:1,conc:null,
+const DEFAULT={hp:MAXHP,temp:0,aid:0,hd:4,ds:{s:0,f:0},insp:true,cd:2,slots:{1:4,2:3},miCure:false,prepared:[...MY_PREP],prepV:1,hidden:[],conc:null,
   coins:{cp:0,sp:4,ep:0,gp:17,pp:0},inv:INV0.map(([n,q])=>({n,q})),notes:"",log:[]};
 
 let S=structuredClone(DEFAULT), tab="combat", mode="n", pendingRest=null, castOpen=null, COL=[];
@@ -308,7 +315,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.4.0";
+const VERSION="v1.4.1";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -578,28 +585,28 @@ const ACTS=[
  {cat:"r",n:"Guiding Bolt",spell:"Guiding Bolt",econ:"Action · 1st slot",stat:"+6",val:"4d6 radiant",rng:"120 ft",note:"The next attack roll against the target before the end of your next turn has advantage. +1d6 for each slot level above 1st."},
  {cat:"r",n:"Toll the Dead",spell:"Toll the Dead",econ:"Action · cantrip",stat:"WIS 14",val:"1d8 / 1d12 necrotic",rng:"60 ft",note:"d12 if the target is already missing any HP. Becomes 2 dice at Cleric 5."},
  {cat:"r",n:"Sacred Flame",spell:"Sacred Flame",econ:"Action · cantrip",stat:"DEX 14",val:"1d8 radiant",rng:"60 ft",note:"The target gets no benefit from cover. Becomes 2d8 at Cleric 5."},
- {cat:"c",n:"Divine Spark",cd:1,econ:"Action (Magic)",stat:"CON 14",val:"1d8+4 radiant/necrotic or heal",rng:"30 ft",note:"Pick one creature you can see. Heal it for 1d8+4, or it saves: full radiant or necrotic damage (your choice) on a fail, half on a success.",act:"cdspark"},
- {cat:"c",n:"Preserve Life",cd:1,econ:"Action (Magic)",stat:"Heal",val:"20 HP shared",rng:"30 ft",note:"Split 20 HP among Bloodied creatures within 30 ft, which can include you. Nobody goes above half their max HP.",act:"cdpreserve"},
- {cat:"c",n:"Turn Undead",cd:1,econ:"Action (Magic)",stat:"WIS 14",val:"Frightened + Incapacitated",rng:"30 ft",note:"Undead you choose save or are Frightened and Incapacitated for 1 minute and flee from you. Ends on a creature if it takes damage.",act:"cdturn"},
- {cat:"h",n:"Cure Wounds (free cast)",econ:"Action · no slot",stat:"Heal",val:"2d8+4",rng:"Touch",note:"Magic Initiate: once per long rest without a slot. Disciple of Life doesn't apply because no slot is used.",av:()=>S.miCure?[false,"Used"]:[true,"Ready"],btn:ok=>`<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${ok?"":"disabled"}>Cast free</button>`},
- {cat:"x",n:"Opportunity Attack",weapon:1,econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
- {cat:"f",n:"Heroic Inspiration",econ:"No action",stat:"",val:"Reroll one die",rng:"Any roll",note:"Spend it right after any roll (attack, save, check, damage or healing) to reroll one die. You must use the new roll. You regain it on every long rest (Resourceful).",av:()=>S.insp?[true,"Ready"]:[false,"Used"],btn:ok=>`<button class="btn sm ${ok?"gold":""}" data-act="insp">${ok?"Spend":"Regain"}</button>`},
- {cat:"f",n:"Initiative",econ:"Start of combat",stat:"+3",val:"",rng:"",note:"Alert adds your proficiency bonus. Straight after rolling you can swap initiative with one willing ally who isn't Incapacitated.",btn:()=>`<button class="btn sm gold" data-act="init">Roll +3</button>`},
- {cat:"f",n:"Concentration check",econ:"No action",stat:"CON save +3",val:"DC 10 or half damage",rng:"When hit",note:"When you take damage while concentrating, make a CON save: DC 10 or half the damage taken, whichever is higher (max DC 30). Fail and the spell ends.",av:()=>S.conc?[true,"On "+S.conc]:[true,"Not concentrating"],btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Concentration (CON save)" data-m="3">Roll</button>`},
- {cat:"s",n:"Dash",econ:"Action",stat:"",val:"+30 ft",rng:"",note:"Gain extra movement equal to your Speed for this turn."},
- {cat:"s",n:"Disengage",econ:"Action",stat:"",val:"",rng:"",note:"Your movement doesn't provoke Opportunity Attacks for the rest of the turn."},
- {cat:"s",n:"Dodge",econ:"Action",stat:"",val:"",rng:"",note:"Until your next turn, attacks against you have disadvantage if you can see the attacker, and you make DEX saves with advantage. Lost if you're Incapacitated or your Speed drops to 0."},
- {cat:"s",n:"Help",econ:"Action",stat:"",val:"",rng:"5 ft",note:"Give an ally advantage on their next ability check using a skill or tool you're proficient in, or on their next attack against an enemy within 5 ft of you."},
- {cat:"s",n:"Hide",econ:"Action",stat:"DC 15",val:"Stealth +1",rng:"",note:"While heavily obscured or behind three-quarters or total cover and out of sight, make a DC 15 Stealth check to become Invisible to enemies.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Stealth" data-m="1">Stealth +1</button>`},
- {cat:"s",n:"Search",econ:"Action",stat:"WIS check",val:"",rng:"",note:"Look for something with a Wisdom check: Perception, Insight, Medicine or Survival.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Perception" data-m="4">Perc +4</button><button class="btn sm" data-act="chk" data-n="Insight" data-m="6">Insight +6</button><button class="btn sm" data-act="chk" data-n="Medicine" data-m="6">Med +6</button>`},
- {cat:"s",n:"Study",econ:"Action",stat:"INT check",val:"",rng:"",note:"Recall or work something out with an Intelligence check: Religion, Arcana, History, Investigation or Nature.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Religion" data-m="6">Religion +6</button><button class="btn sm" data-act="chk" data-n="Arcana" data-m="4">Arcana +4</button>`},
- {cat:"s",n:"Influence",econ:"Action",stat:"CHA / WIS check",val:"",rng:"",note:"Try to change a creature's attitude: Intimidation, Persuasion, Deception, Performance, or Animal Handling for beasts.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Intimidation" data-m="1">Intim +1</button><button class="btn sm" data-act="chk" data-n="Persuasion" data-m="-1">Pers −1</button>`},
- {cat:"s",n:"Grapple or Shove",econ:"Action (Unarmed Strike)",stat:"DC 15",val:"",rng:"5 ft",note:"The target makes a STR or DEX save (its choice). Grapple: it's Grappled until it escapes. Shove: push it 5 ft or knock it Prone. Escaping your grapple is also DC 15."},
- {cat:"s",n:"Ready",econ:"Action + Reaction",stat:"",val:"",rng:"",note:"Choose a trigger and an action. When the trigger happens before your next turn, use your reaction to take that action. A readied spell needs concentration until it's released."},
- {cat:"s",n:"Utilize",econ:"Action",stat:"",val:"",rng:"",note:"Use a nonmagical object: drink a potion, light oil, set caltrops, pour holy water. Interacting with one object, such as drawing a weapon or opening a door, is free during your move or action."},
- {cat:"z",n:"Spend a Hit Die",econ:"Short rest",stat:"Heal",val:"1d8+3",rng:"",note:"During a short rest, roll a Hit Die and heal that much. You regain half your Hit Dice on a long rest.",av:()=>S.hd?[true,S.hd+" of 4 left"]:[false,"None left"],btn:ok=>`<button class="btn sm gold" data-act="hd" ${ok?"":"disabled"}>Spend</button>`},
- {cat:"z",n:"Short rest",econ:"1 hour",stat:"",val:"",rng:"",note:"Regain one Channel Divinity use. Spend Hit Dice to heal.",av:()=>[true,S.cd<2?"Regains 1 CD":"Nothing to regain"],btn:()=>pendingRest==="short"?`<button class="btn sm heal" data-act="restyes">Confirm</button><button class="btn sm" data-act="restno">Cancel</button>`:`<button class="btn sm gold" data-act="short">Take</button>`},
- {cat:"z",n:"Long rest",econ:"8 hours",stat:"",val:"",rng:"",note:"Full HP, all spell slots, both Channel Divinity uses, free Cure Wounds, Heroic Inspiration, and half your Hit Dice back. Ends concentration and Aid.",av:()=>[true,"Full reset"],btn:()=>pendingRest==="long"?`<button class="btn sm heal" data-act="restyes">Confirm</button><button class="btn sm" data-act="restno">Cancel</button>`:`<button class="btn sm gold" data-act="long">Take</button>`}
+ {cat:"r",n:"Divine Spark",cd:1,econ:"Action (Magic)",stat:"CON 14",val:"1d8+4 radiant/necrotic or heal",rng:"30 ft",note:"Pick one creature you can see. Heal it for 1d8+4, or it saves: full radiant or necrotic damage (your choice) on a fail, half on a success.",act:"cdspark"},
+ {cat:"u",sub:"Healing",n:"Preserve Life",cd:1,econ:"Action (Magic)",stat:"Heal",val:"20 HP shared",rng:"30 ft",note:"Split 20 HP among Bloodied creatures within 30 ft, which can include you. Nobody goes above half their max HP.",act:"cdpreserve"},
+ {cat:"r",n:"Turn Undead",cd:1,econ:"Action (Magic)",stat:"WIS 14",val:"Frightened + Incapacitated",rng:"30 ft",note:"Undead you choose save or are Frightened and Incapacitated for 1 minute and flee from you. Ends on a creature if it takes damage.",act:"cdturn"},
+ {cat:"u",sub:"Healing",n:"Cure Wounds (free cast)",econ:"Action · no slot",stat:"Heal",val:"2d8+4",rng:"Touch",note:"Magic Initiate: once per long rest without a slot. Disciple of Life doesn't apply because no slot is used.",av:()=>S.miCure?[false,"Used"]:[true,"Ready"],btn:ok=>`<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${ok?"":"disabled"}>Cast free</button>`},
+ {cat:"m",n:"Opportunity Attack",weapon:1,econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
+ {cat:"u",sub:"Anytime",n:"Heroic Inspiration",econ:"No action",stat:"",val:"Reroll one die",rng:"Any roll",note:"Spend it right after any roll (attack, save, check, damage or healing) to reroll one die. You must use the new roll. You regain it on every long rest (Resourceful).",av:()=>S.insp?[true,"Ready"]:[false,"Used"],btn:ok=>`<button class="btn sm ${ok?"gold":""}" data-act="insp">${ok?"Spend":"Regain"}</button>`},
+ {cat:"u",sub:"Anytime",n:"Initiative",econ:"Start of combat",stat:"+3",val:"",rng:"",note:"Alert adds your proficiency bonus. Straight after rolling you can swap initiative with one willing ally who isn't Incapacitated.",btn:()=>`<button class="btn sm gold" data-act="init">Roll +3</button>`},
+ {cat:"u",sub:"Anytime",n:"Concentration check",econ:"No action",stat:"CON save +3",val:"DC 10 or half damage",rng:"When hit",note:"When you take damage while concentrating, make a CON save: DC 10 or half the damage taken, whichever is higher (max DC 30). Fail and the spell ends.",av:()=>S.conc?[true,"On "+S.conc]:[true,"Not concentrating"],btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Concentration (CON save)" data-m="3">Roll</button>`},
+ {cat:"u",sub:"Standard actions",n:"Dash",econ:"Action",stat:"",val:"+30 ft",rng:"",note:"Gain extra movement equal to your Speed for this turn."},
+ {cat:"u",sub:"Standard actions",n:"Disengage",econ:"Action",stat:"",val:"",rng:"",note:"Your movement doesn't provoke Opportunity Attacks for the rest of the turn."},
+ {cat:"u",sub:"Standard actions",n:"Dodge",econ:"Action",stat:"",val:"",rng:"",note:"Until your next turn, attacks against you have disadvantage if you can see the attacker, and you make DEX saves with advantage. Lost if you're Incapacitated or your Speed drops to 0."},
+ {cat:"u",sub:"Standard actions",n:"Help",econ:"Action",stat:"",val:"",rng:"5 ft",note:"Give an ally advantage on their next ability check using a skill or tool you're proficient in, or on their next attack against an enemy within 5 ft of you."},
+ {cat:"u",sub:"Standard actions",n:"Hide",econ:"Action",stat:"DC 15",val:"Stealth +1",rng:"",note:"While heavily obscured or behind three-quarters or total cover and out of sight, make a DC 15 Stealth check to become Invisible to enemies.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Stealth" data-m="1">Stealth +1</button>`},
+ {cat:"u",sub:"Standard actions",n:"Search",econ:"Action",stat:"WIS check",val:"",rng:"",note:"Look for something with a Wisdom check: Perception, Insight, Medicine or Survival.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Perception" data-m="4">Perc +4</button><button class="btn sm" data-act="chk" data-n="Insight" data-m="6">Insight +6</button><button class="btn sm" data-act="chk" data-n="Medicine" data-m="6">Med +6</button>`},
+ {cat:"u",sub:"Standard actions",n:"Study",econ:"Action",stat:"INT check",val:"",rng:"",note:"Recall or work something out with an Intelligence check: Religion, Arcana, History, Investigation or Nature.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Religion" data-m="6">Religion +6</button><button class="btn sm" data-act="chk" data-n="Arcana" data-m="4">Arcana +4</button>`},
+ {cat:"u",sub:"Standard actions",n:"Influence",econ:"Action",stat:"CHA / WIS check",val:"",rng:"",note:"Try to change a creature's attitude: Intimidation, Persuasion, Deception, Performance, or Animal Handling for beasts.",btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Intimidation" data-m="1">Intim +1</button><button class="btn sm" data-act="chk" data-n="Persuasion" data-m="-1">Pers −1</button>`},
+ {cat:"m",n:"Grapple or Shove",econ:"Action (Unarmed Strike)",stat:"DC 15",val:"",rng:"5 ft",note:"The target makes a STR or DEX save (its choice). Grapple: it's Grappled until it escapes. Shove: push it 5 ft or knock it Prone. Escaping your grapple is also DC 15."},
+ {cat:"u",sub:"Standard actions",n:"Ready",econ:"Action + Reaction",stat:"",val:"",rng:"",note:"Choose a trigger and an action. When the trigger happens before your next turn, use your reaction to take that action. A readied spell needs concentration until it's released."},
+ {cat:"u",sub:"Standard actions",n:"Utilize",econ:"Action",stat:"",val:"",rng:"",note:"Use a nonmagical object: drink a potion, light oil, set caltrops, pour holy water. Interacting with one object, such as drawing a weapon or opening a door, is free during your move or action."},
+ {cat:"u",sub:"Rest & recovery",n:"Spend a Hit Die",econ:"Short rest",stat:"Heal",val:"1d8+3",rng:"",note:"During a short rest, roll a Hit Die and heal that much. You regain half your Hit Dice on a long rest.",av:()=>S.hd?[true,S.hd+" of 4 left"]:[false,"None left"],btn:ok=>`<button class="btn sm gold" data-act="hd" ${ok?"":"disabled"}>Spend</button>`},
+ {cat:"u",sub:"Rest & recovery",n:"Short rest",econ:"1 hour",stat:"",val:"",rng:"",note:"Regain one Channel Divinity use. Spend Hit Dice to heal.",av:()=>[true,S.cd<2?"Regains 1 CD":"Nothing to regain"],btn:()=>pendingRest==="short"?`<button class="btn sm heal" data-act="restyes">Confirm</button><button class="btn sm" data-act="restno">Cancel</button>`:`<button class="btn sm gold" data-act="short">Take</button>`},
+ {cat:"u",sub:"Rest & recovery",n:"Long rest",econ:"8 hours",stat:"",val:"",rng:"",note:"Full HP, all spell slots, both Channel Divinity uses, free Cure Wounds, Heroic Inspiration, and half your Hit Dice back. Ends concentration and Aid.",av:()=>[true,"Full reset"],btn:()=>pendingRest==="long"?`<button class="btn sm heal" data-act="restyes">Confirm</button><button class="btn sm" data-act="restno">Cancel</button>`:`<button class="btn sm gold" data-act="long">Take</button>`}
 ];
 function actAvail(o){
   if(o.av)return o.av();
@@ -611,7 +618,10 @@ function actAvail(o){
   if(o.needConc)return S.conc===o.needConc?[true,"Active"]:[false,"Cast it first"];
   return[true,"At will"];
 }
-const ACAT=[["c","Channel Divinity"],["b","Bonus actions"],["m","Melee"],["r","Ranged"],["h","Healing & support"],["u","Control & utility"],["x","Reactions"],["f","Anytime"],["s","Standard actions"],["z","Rest & recovery"]];
+const ACAT=[["m","Melee"],["r","Ranged"],["b","Bonus actions"],["u","Utility"]];
+const USUB=["Healing","Spells","Anytime","Standard actions","Rest & recovery"];
+let AF="all",AVONLY=false,SHOWHID=false;
+try{AF=localStorage.getItem("alden-af")||"all";AVONLY=localStorage.getItem("alden-avonly")==="1";}catch(e){}
 const SUPPORT=new Set(["Bless","Aid","Guidance","Spare the Dying","Protection from Evil and Good","Warding Bond","Enhance Ability","Protection from Poison","Sanctuary","Shield of Faith","Lesser Restoration","Gentle Repose"]);
 // Any prepared spell not already listed above gets its own row, so nothing on the Spells tab is missing here.
 function autoSpellRows(){
@@ -620,32 +630,56 @@ function autoSpellRows(){
     const [n,lv,src,sa,t,rng,dur,c,r,dom,desc,R]=s;
     const time=t==="1A"?"Action":t==="1BA"?"Bonus action":"Takes "+t.replace("m"," min").replace("h"," hour");
     const cost=lv===0?"cantrip":lv===1?"1st slot":"2nd slot";
-    const cat=t==="1BA"?"b":(R?.heal||SUPPORT.has(n))?"h":"u";
+    const support=R?.heal||SUPPORT.has(n), offensive=!support&&(R?.dmg||sa!=="—");
+    const close=/^(Touch|Self|5 ft)/.test(rng);
+    const cat=t==="1BA"?"b":support?"u":offensive?(close?"m":"r"):"u";
+    const sub=cat!=="u"?null:support?"Healing":"Spells";
     const val=R?.heal?`${R.heal}+${WIS}${lv>0?` (+${2+lv} Disciple)`:""}`:R?.dmg?`${R.dmg} ${R.type}`:"";
-    return {cat,n,spell:n,econ:[time,cost,c?"Conc":"",r?"Ritual":""].filter(Boolean).join(" · "),stat:sa!=="—"?sa:(R?.heal?"Heal":""),val,rng:rng+(dur&&dur!=="Instant"?" · "+dur:""),note:desc||"See the Spells tab for details.",auto:i};
+    return {cat,sub,n,spell:n,econ:[time,cost,c?"Conc":"",r?"Ritual":""].filter(Boolean).join(" · "),stat:sa!=="—"?sa:(R?.heal?"Heal":""),val,rng:rng+(dur&&dur!=="Instant"?" · "+dur:""),note:desc||"See the Spells tab for details.",auto:i};
   });
 }
 let ACOL=[];try{ACOL=JSON.parse(localStorage.getItem("alden-acol")||"[]");}catch(e){}
 function vActions(){
   const ALL=[...ACTS.map((o,i)=>[o,i]),...autoSpellRows().map(o=>[o,-1])];
-  let h=`<section><div class="row" style="justify-content:space-between"><span class="label">Prepared spells only</span>
-    <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Adv"],["d","Dis"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div></div>`;
+  const hid=new Set(S.hidden||[]);
+  const nHid=ALL.filter(([o])=>hid.has(o.n)&&actAvail(o)).length;
+  let h=`<section>
+  <div class="seg filt" role="group" aria-label="Show section">${[["all","All"],...ACAT.map(([k,l])=>[k,l.replace(" actions","")])].map(([k,l])=>`<button data-act="af" data-k="${k}" aria-pressed="${AF===k}">${l}</button>`).join("")}</div>
+  <div class="row" style="justify-content:space-between">
+    <div class="row" style="gap:6px">
+      <button class="btn sm ${AVONLY?"gold":""}" data-act="avonly" aria-pressed="${AVONLY}">${AVONLY?"✓ ":""}Available only</button>
+      <button class="btn sm ${SHOWHID?"gold":""}" data-act="showhid" aria-pressed="${SHOWHID}" ${nHid||SHOWHID?"":"disabled"}>${SHOWHID?"Hide hidden":"Show hidden"} (${nHid})</button>
+    </div>
+    <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Adv"],["d","Dis"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div>
+  </div>`;
+  const rowHtml=([o,i,[ok,st]])=>{
+    let btn="";
+    if(o.btn)btn=o.btn(ok);
+    else if(o.spell)btn=castCtl(SI(o.spell));
+    else if(o.act)btn=`<button class="btn sm gold" data-act="${o.act}" ${ok?"":"disabled"}>Use</button>`;
+    else if(o.roll)btn=`<button class="btn sm gold" data-act="atkx" data-i="${i}" ${ok?"":"disabled"}>Roll</button>`+(o.roll2?`<button class="btn sm" data-act="atkx" data-i="${i}" data-v="2">${o.roll2.label}</button>`:"");
+    const isHid=hid.has(o.n);
+    const hb=`<button class="hidebtn" data-act="${isHid?"unhide":"hide"}" data-n="${esc(o.n)}" aria-label="${isHid?"Show":"Hide"} ${esc(o.n)}" title="${isHid?"Show again":"Hide this"}">${isHid?"Show":"Hide"}</button>`;
+    return `<div class="ac ${ok?"":"off"} ${isHid?"hiddenrow":""}"><div><div class="nm">${esc(o.n)} <span class="st ${ok?"ok":""}">${st}</span></div>
+      <div class="line"><span class="econ">${o.econ}</span>${o.stat?`<b>${o.stat}</b>`:""}${o.val?`<span>${o.val}</span>`:""}${o.rng?`<span>${o.rng}</span>`:""}</div></div>
+      <div class="btns">${btn}${hb}</div><div class="note">${esc(o.note)}</div></div>`;
+  };
+  let shown=0;
   for(const [k,label] of ACAT){
-    const rows=ALL.map(([o,i])=>[o,i,actAvail(o)]).filter(([o,,a])=>o.cat===k&&a);
-    if(!rows.length)continue;
-    const ready=rows.filter(([,,a])=>a[0]).length, shut=ACOL.includes(k);
-    h+=`<div><button class="lvl-title" data-act="acol" data-k="${k}" aria-expanded="${!shut}"><span class="chev" aria-hidden="true">${shut?"▸":"▾"}</span><h2>${label}</h2><span class="cnt">${ready} of ${rows.length} available</span></button>`;
+    if(AF!=="all"&&AF!==k)continue;
+    const all=ALL.map(([o,i])=>[o,i,actAvail(o)]).filter(([o,,a])=>o.cat===k&&a);
+    const nh=all.filter(([o])=>hid.has(o.n)).length;
+    const rows=all.filter(([o,,a])=>(SHOWHID||!hid.has(o.n))&&(!AVONLY||a[0]));
+    const ready=all.filter(([o,,a])=>a[0]&&!hid.has(o.n)).length, total=all.length-nh, shut=ACOL.includes(k);
+    h+=`<div><button class="lvl-title" data-act="acol" data-k="${k}" aria-expanded="${!shut}"><span class="chev" aria-hidden="true">${shut?"▸":"▾"}</span><h2>${label}</h2><span class="cnt">${ready} of ${total} available${nh?` <span class="sub">· ${nh} hidden</span>`:""}</span></button>`;
     if(!shut){
-      h+=`<div class="panel" style="padding-block:4px;margin-top:6px">`+rows.map(([o,i,[ok,st]])=>{
-        let btn="";
-        if(o.btn)btn=o.btn(ok);
-        else if(o.spell)btn=castCtl(SI(o.spell));
-        else if(o.act)btn=`<button class="btn sm gold" data-act="${o.act}" ${ok?"":"disabled"}>Use</button>`;
-        else if(o.roll)btn=`<button class="btn sm gold" data-act="atkx" data-i="${i}" ${ok?"":"disabled"}>Roll</button>`+(o.roll2?`<button class="btn sm" data-act="atkx" data-i="${i}" data-v="2">${o.roll2.label}</button>`:"");
-        return `<div class="ac ${ok?"":"off"}"><div><div class="nm">${esc(o.n)} <span class="st ${ok?"ok":""}">${st}</span></div>
-          <div class="line"><span class="econ">${o.econ}</span>${o.stat?`<b>${o.stat}</b>`:""}${o.val?`<span>${o.val}</span>`:""}${o.rng?`<span>${o.rng}</span>`:""}</div></div>
-          <div class="btns">${btn}</div><div class="note">${esc(o.note)}</div></div>`;
-      }).join("")+`</div>`;
+      shown+=rows.length;
+      let body="";
+      if(k==="u"){
+        for(const sub of USUB){const g=rows.filter(([o])=>o.sub===sub);if(g.length)body+=`<div class="subhead label">${sub}</div>`+g.map(rowHtml).join("");}
+        body+=rows.filter(([o])=>!USUB.includes(o.sub)).map(rowHtml).join("");
+      }else body=rows.map(rowHtml).join("");
+      h+=`<div class="panel" style="padding-block:4px;margin-top:6px">${body||`<p class="label" style="text-transform:none;letter-spacing:0;margin:10px 0">Nothing to show with the current filters.</p>`}</div>`;
     }
     h+=`</div>`;
   }
@@ -752,6 +786,11 @@ document.addEventListener("click",e=>{
     case"mi":S.miCure=!S.miCure;save();render();break;
     case"prep":{const n=t.dataset.n,k=S.prepared.indexOf(n);if(k>=0)S.prepared.splice(k,1);else if(S.prepared.length<PREP_MAX)S.prepared.push(n);else{toastMsg(`You can prepare ${PREP_MAX}. Unprepare one first.`);break;}save();render();break;}
     case"col":{const k=COL.indexOf(i);k>=0?COL.splice(k,1):COL.push(i);try{localStorage.setItem("alden-col",JSON.stringify(COL))}catch(e){};render();break;}
+    case"af":AF=t.dataset.k;try{localStorage.setItem("alden-af",AF)}catch(e){};render();break;
+    case"avonly":AVONLY=!AVONLY;try{localStorage.setItem("alden-avonly",AVONLY?"1":"0")}catch(e){};render();break;
+    case"showhid":SHOWHID=!SHOWHID;render();break;
+    case"hide":{const n=t.dataset.n;S.hidden=[...new Set([...(S.hidden||[]),n])];save();render();toastMsg(`Hidden ${n}. Use "Show hidden" to bring it back.`);break;}
+    case"unhide":{const n=t.dataset.n;S.hidden=(S.hidden||[]).filter(x=>x!==n);save();render();break;}
     case"acol":{const k=t.dataset.k,j=ACOL.indexOf(k);j>=0?ACOL.splice(j,1):ACOL.push(k);try{localStorage.setItem("alden-acol",JSON.stringify(ACOL))}catch(e){};render();break;}
     case"atkx":{const o=ACTS[i],r=t.dataset.v==="2"?o.roll2:o.roll;attack(o.n+(t.dataset.v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type,!!o.weapon);break;}
     case"prepfilter":window._pf=!window._pf;render();break;
