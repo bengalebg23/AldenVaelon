@@ -154,11 +154,38 @@ textarea{min-height:110px;resize:vertical}
 .feat b{display:block}
 .feat span{font-size:.9rem;color:var(--muted)}
 
+/* actions + features */
+.ac{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.ac:first-child{border-top:0}
+.ac.off{opacity:.55}
+.ac .nm{font-weight:700}
+.ac .line{display:flex;gap:6px 10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);align-items:baseline}
+.ac .line b{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.ac .note{grid-column:1/-1;font-size:.86rem;color:var(--muted);max-width:65ch}
+.ac .btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.st{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.04em;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+.st.ok{color:var(--good);border-color:var(--good)}
+.st.pas{color:var(--blue);border-color:var(--blue)}
+.econ{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gold)}
+details.fe{border-top:1px solid var(--line)}
+details.fe:first-of-type{border-top:0}
+details.fe summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;padding:11px 0}
+details.fe summary::-webkit-details-marker{display:none}
+details.fe summary .chev{color:var(--muted);transition:transform .15s}
+details.fe[open] summary .chev{transform:rotate(90deg)}
+details.fe summary .nm{font-weight:700;display:block}
+details.fe summary .ty{font-size:.78rem;color:var(--muted)}
+details.fe .body{padding:0 0 14px 22px;display:grid;gap:8px;font-size:.93rem;max-width:68ch}
+details.fe .body p{margin:0}
+details.fe .you{background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:.88rem}
+details.fe .you b{color:var(--gold);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px}
+details.fe .ref{font-size:.75rem;color:var(--muted)}
+.fsum{display:flex;gap:8px;flex-wrap:wrap}
 /* tabbar */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
-nav .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-nav button{border:0;background:none;padding:6px 2px;border-radius:8px;font-size:.8rem;display:grid;justify-items:center;gap:2px;color:var(--muted)}
+nav .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:2px}
+nav button{border:0;background:none;padding:6px 0;border-radius:8px;font-size:.72rem;min-width:0;display:grid;justify-items:center;gap:2px;color:var(--muted)}
 nav button svg{width:22px;height:22px}
 nav button[aria-current=true]{color:var(--blue);background:var(--blue-soft)}
 
@@ -267,7 +294,7 @@ const DEFAULT={hp:MAXHP,temp:0,aid:0,hd:4,ds:{s:0,f:0},insp:true,cd:2,slots:{1:4
 
 let S=structuredClone(DEFAULT), tab="combat", mode="n", pendingRest=null, castOpen=null, COL=[];
 try{COL=JSON.parse(localStorage.getItem("alden-col")||"[]");}catch(e){}
-try{const t=localStorage.getItem("alden-tab"); if(t) tab=t;}catch(e){}
+try{const t=localStorage.getItem("alden-tab"); if(t) tab=t==="lore"?"features":t;}catch(e){}
 
 /* ---------- persistence ---------- */
 // Paste the Firebase web config here (same project as Meal Rota is fine). Leave null to save on this device only.
@@ -281,7 +308,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.1.1";
+const VERSION="v1.2.0";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -297,6 +324,7 @@ function save(){
 function loadScript(src){return new Promise((ok,no)=>{const t=document.createElement("script");t.src=src;t.onload=ok;t.onerror=no;document.head.appendChild(t);});}
 (async()=>{
   if(!FIREBASE_CONFIG) return;
+  await new Promise(r=>setTimeout(r,0)); // let the rest of the script load before touching the UI
   try{
     setStatus("Connecting…");
     await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
@@ -372,7 +400,7 @@ function castSpell(i,lvl){
   castOpen=null;
   const L=lvl==="mi"?1:lvl, up=Math.max(0,L-base);
   if(name==="Aid"){S.aid=5*(1+up);S.hp+=S.aid;}
-  if(R?.heal){let e=R.heal;for(let k=0;k<up;k++)e+="+"+R.up;e+="+"+WIS;const r=roll(e);const dis=2+L;log(`${name} (level ${L})`,r.total+dis+" HP",`${r.detail} + ${dis} Disciple of Life`);}
+  if(R?.heal){let e=R.heal;for(let k=0;k<up;k++)e+="+"+R.up;e+="+"+WIS;const r=roll(e);const dis=lvl==="mi"?0:2+L;log(`${name} (${lvl==="mi"?"free, Magic Initiate":"level "+L})`,r.total+dis+" HP",r.detail+(dis?` + ${dis} Disciple of Life`:""));}
   else if(R?.atk){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const a=d20(R.atk),crit=a.nat===20,d=roll(e,crit);log(`${name}: ${a.total} to hit${crit?" · CRIT":""}`,d.total+" "+R.type,`${a.detail} | dmg ${d.detail}`,crit);}
   else if(R?.dmg){let e=R.dmg;for(let k=0;k<up;k++)e+="+"+R.up;const d=roll(e);let msg=d.detail;if(R.alt){const b=roll(R.alt);msg+=` · if hurt: ${b.total} ${b.detail}`;}log(`${name} (DC ${DC})`,d.total+" "+R.type,msg);}
   else toastMsg(`Cast ${name}${L>0?" at level "+L:""}.`);
@@ -381,10 +409,11 @@ function castSpell(i,lvl){
 
 /* ---------- render ---------- */
 const TABS=[["combat","Combat",'<path d="M5 19 19 5M14 5h5v5M5 14l5 5M3 21l3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'],
+ ["actions","Actions",'<path d="M13 3 5 14h6l-1 7 8-11h-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
  ["spells","Spells",'<path d="M12 3l2.2 5.4L20 9l-4.4 3.8L17 19l-5-3-5 3 1.4-6.2L4 9l5.8-.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
+ ["features","Features",'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
  ["abilities","Abilities",'<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>'],
- ["gear","Gear",'<path d="M6 8h12l-1 12H7zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'],
- ["lore","Lore",'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>']];
+ ["gear","Gear",'<path d="M6 8h12l-1 12H7zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>']];
 
 function renderTabs(){document.getElementById("tabs").innerHTML=TABS.map(([k,l,ic])=>`<button data-tab="${k}" aria-current="${tab===k}"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${l}</button>`).join("");}
 function renderStatus(){
@@ -493,12 +522,7 @@ function vSpells(){
     h+=list.map(([s,i])=>{
       const [n,lv,src,sa,t,rng,dur,c,r,dom,desc]=s, isPrep=dom||S.prepared.includes(n);
       const star=L===0?`<span class="star fixed" aria-hidden="true">✦</span>`:dom?`<span class="star fixed" title="Always prepared">★</span>`:`<button class="star ${isPrep?"on":""}" data-act="prep" data-n="${esc(n)}" aria-label="${isPrep?"Unprepare":"Prepare"} ${esc(n)}" aria-pressed="${isPrep}">★</button>`;
-      let cast="";
-      if(L===0) cast=`<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="0">${s[11]?"Roll":"Cast"}</button>`;
-      else if(isPrep||(n==="Cure Wounds")){
-        if(castOpen===i){cast=`<div class="cast">${[1,2].filter(l=>l>=lv).map(l=>`<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="${l}" ${S.slots[l]<1?"disabled":""}>Lv ${l} (${S.slots[l]})</button>`).join("")}${n==="Cure Wounds"&&!S.miCure?`<button class="btn sm" data-act="cast" data-i="${i}" data-l="mi">Free</button>`:""}<button class="btn sm" data-act="castclose" aria-label="Cancel">✕</button></div>`;}
-        else cast=`<button class="btn sm gold" data-act="castopen" data-i="${i}">Cast</button>`;
-      }
+      const cast=castCtl(i);
       return `<div class="sp">${star}<div><div class="nm">${esc(n)}</div><div class="tags"><span>${t}</span><span>${rng}</span><span>${dur}</span>${sa!=="—"?`<span>${sa}</span>`:""}${c?`<span class="tag c">Conc</span>`:""}${r?`<span class="tag r">Ritual</span>`:""}<span>${src}</span></div></div>${cast}${desc?`<div class="desc">${esc(desc)}</div>`:""}</div>`;
     }).join("")||`<p class="label" style="text-transform:none;letter-spacing:0">No prepared spells at this level yet. Tap ★ in the full list.</p>`;
     h+=`</div>`;
@@ -518,29 +542,137 @@ function vGear(){
   </section>`;
 }
 
+const SI=n=>SPELLS.findIndex(s=>s[0]===n);
+const prepd=n=>{const s=SPELLS[SI(n)];return !!s&&(s[1]===0||!!s[9]||S.prepared.includes(n));};
+function castCtl(i){
+  const s=SPELLS[i],[n,lv]=s;
+  if(lv===0) return `<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="0">${s[11]?"Roll":"Cast"}</button>`;
+  if(!(s[9]||S.prepared.includes(n))) return "";
+  if(castOpen===i) return `<div class="cast">${[1,2].filter(l=>l>=lv).map(l=>`<button class="btn sm gold" data-act="cast" data-i="${i}" data-l="${l}" ${S.slots[l]<1?"disabled":""}>Lv ${l} (${S.slots[l]})</button>`).join("")}${n==="Cure Wounds"&&!S.miCure?`<button class="btn sm" data-act="cast" data-i="${i}" data-l="mi">Free</button>`:""}<button class="btn sm" data-act="castclose" aria-label="Cancel">✕</button></div>`;
+  return `<button class="btn sm gold" data-act="castopen" data-i="${i}">Cast</button>`;
+}
+
+/* ---------- actions ---------- */
+// cat: b bonus action, m melee, r ranged
+const ACTS=[
+ {cat:"b",n:"Healing Word",spell:"Healing Word",econ:"Bonus action · 1st slot",stat:"Heal",val:"2d4+4 (+3 Disciple)",rng:"60 ft",note:"Heal a creature you can see. Disciple of Life adds 2 + the slot level. +2d4 for each slot level above 1st."},
+ {cat:"b",n:"Spiritual Weapon",spell:"Spiritual Weapon",econ:"Bonus action · 2nd slot · Conc",stat:"+6",val:"1d8+4 force",rng:"60 ft",note:"A floating spectral weapon appears and makes a melee spell attack. Lasts up to 1 minute while you concentrate. +1d8 for each slot level above 2nd."},
+ {cat:"b",n:"Spiritual Weapon: move and strike",needConc:"Spiritual Weapon",econ:"Bonus action · free",stat:"+6",val:"1d8+4 force",rng:"Move 20 ft",note:"On each later turn while the spell lasts, move the weapon up to 20 ft and attack with it again. No slot needed.",roll:{hit:6,dmg:"1d8+4",type:"force"}},
+ {cat:"b",n:"Shield of Faith",spell:"Shield of Faith",econ:"Bonus action · 1st slot · Conc",stat:"+2 AC",val:"",rng:"60 ft",note:"One creature you choose gets +2 AC for up to 10 minutes while you concentrate."},
+ {cat:"b",n:"Sanctuary",spell:"Sanctuary",econ:"Bonus action · 1st slot",stat:"WIS 14",val:"",rng:"30 ft",note:"Anyone targeting the warded creature with an attack or harmful spell must save or pick a new target. Ends if the warded creature attacks, casts a spell or deals damage."},
+ {cat:"b",n:"Lesser Restoration",spell:"Lesser Restoration",econ:"Bonus action · 2nd slot",stat:"Cure",val:"",rng:"Touch",note:"End one disease, or the Blinded, Deafened, Paralyzed or Poisoned condition."},
+ {cat:"b",n:"Blue Dragon Infusion",spell:"Blue Dragon Infusion",econ:"Bonus action · 1st slot",stat:"",val:"",rng:"Self",note:"Self only, instantaneous. Your sheet doesn't include this spell's rules text, so check D&D Beyond for what it does."},
+ {cat:"m",n:"Spear, +1",econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"Magic +1 spear. Two-handed it deals 1d8+6, but not while you hold your shield.",roll:{hit:8,dmg:"1d6+6",type:"piercing"},roll2:{label:"2-hand",hit:8,dmg:"1d8+6",type:"piercing"}},
+ {cat:"m",n:"Javelin (melee)",econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"5 ft",note:"Simple weapon, so you add proficiency.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
+ {cat:"m",n:"Longsword",econ:"Action",stat:"+5",val:"1d8+5 slashing",rng:"5 ft",note:"Martial weapon. Clerics aren't proficient, so no proficiency bonus to hit. Two-handed 1d10+5.",roll:{hit:5,dmg:"1d8+5",type:"slashing"},roll2:{label:"2-hand",hit:5,dmg:"1d10+5",type:"slashing"}},
+ {cat:"m",n:"Flail",econ:"Action",stat:"+5",val:"1d8+5 bludgeoning",rng:"5 ft",note:"Martial weapon, so no proficiency bonus to hit. Same damage as the Longsword one-handed.",roll:{hit:5,dmg:"1d8+5",type:"bludgeoning"}},
+ {cat:"m",n:"Unarmed Strike",econ:"Action",stat:"+7",val:"6 bludgeoning",rng:"5 ft",note:"Or Grapple or Shove instead of damage: the target makes a STR or DEX save (its choice) against DC 15.",roll:{hit:7,dmg:"6",type:"bludgeoning"}},
+ {cat:"m",n:"Inflict Wounds",spell:"Inflict Wounds",econ:"Action · 1st slot",stat:"CON 14",val:"2d10 necrotic",rng:"Touch",note:"Half damage on a successful save. +1d10 for each slot level above 1st."},
+ {cat:"m",n:"Word of Radiance",spell:"Word of Radiance",econ:"Action · cantrip",stat:"CON 14",val:"1d6 radiant",rng:"5 ft around you",note:"Hits every creature you choose within 5 ft. No damage on a successful save. Becomes 2d6 at Cleric 5."},
+ {cat:"r",n:"Javelin (thrown)",econ:"Action",stat:"+7",val:"1d6+5 piercing",rng:"30/120 ft",note:"Disadvantage beyond 30 ft. You carry 8.",roll:{hit:7,dmg:"1d6+5",type:"piercing"}},
+ {cat:"r",n:"Spear, +1 (thrown)",econ:"Action",stat:"+8",val:"1d6+6 piercing",rng:"20/60 ft",note:"Your best hit, but you'll need to pick it up again.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
+ {cat:"r",n:"Guiding Bolt",spell:"Guiding Bolt",econ:"Action · 1st slot",stat:"+6",val:"4d6 radiant",rng:"120 ft",note:"The next attack roll against the target before the end of your next turn has advantage. +1d6 for each slot level above 1st."},
+ {cat:"r",n:"Divine Spark",cd:1,econ:"Action · Channel Divinity",stat:"CON 14",val:"1d8+4 radiant/necrotic",rng:"30 ft",note:"Half damage on a successful save. Or heal the creature for 1d8+4 instead.",act:"cdspark"},
+ {cat:"r",n:"Toll the Dead",spell:"Toll the Dead",econ:"Action · cantrip",stat:"WIS 14",val:"1d8 / 1d12 necrotic",rng:"60 ft",note:"d12 if the target is already missing any HP. Becomes 2 dice at Cleric 5."},
+ {cat:"r",n:"Sacred Flame",spell:"Sacred Flame",econ:"Action · cantrip",stat:"DEX 14",val:"1d8 radiant",rng:"60 ft",note:"The target gets no benefit from cover. Becomes 2d8 at Cleric 5."}
+];
+function actAvail(o){
+  if(o.spell){const s=SPELLS[SI(o.spell)];if(!prepd(o.spell))return null;
+    if(s[1]===0)return[true,"At will"];
+    const left=[1,2].filter(l=>l>=s[1]).reduce((a,l)=>a+S.slots[l],0);
+    return left?[true,left+" slot"+(left>1?"s":"")]:[false,"No slots"];}
+  if(o.cd)return S.cd?[true,S.cd+" of 2 left"]:[false,"None left"];
+  if(o.needConc)return S.conc===o.needConc?[true,"Active"]:[false,"Cast it first"];
+  return[true,"At will"];
+}
+const ACAT=[["b","Bonus actions"],["m","Melee"],["r","Ranged"]];
+let ACOL=[];try{ACOL=JSON.parse(localStorage.getItem("alden-acol")||"[]");}catch(e){}
+function vActions(){
+  let h=`<section><div class="row" style="justify-content:space-between"><span class="label">Prepared spells only</span>
+    <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Adv"],["d","Dis"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div></div>`;
+  for(const [k,label] of ACAT){
+    const rows=ACTS.map((o,i)=>[o,i,actAvail(o)]).filter(([o,,a])=>o.cat===k&&a);
+    const ready=rows.filter(([,,a])=>a[0]).length, shut=ACOL.includes(k);
+    h+=`<div><button class="lvl-title" data-act="acol" data-k="${k}" aria-expanded="${!shut}"><span class="chev" aria-hidden="true">${shut?"▸":"▾"}</span><h2>${label}</h2><span class="cnt">${ready} of ${rows.length} available</span></button>`;
+    if(!shut){
+      h+=`<div class="panel" style="padding-block:4px;margin-top:6px">`+rows.map(([o,i,[ok,st]])=>{
+        let btn="";
+        if(o.spell)btn=castCtl(SI(o.spell));
+        else if(o.act)btn=`<button class="btn sm gold" data-act="${o.act}" ${ok?"":"disabled"}>Use</button>`;
+        else if(o.roll)btn=`<button class="btn sm gold" data-act="atkx" data-i="${i}" ${ok?"":"disabled"}>Roll</button>`+(o.roll2?`<button class="btn sm" data-act="atkx" data-i="${i}" data-v="2">${o.roll2.label}</button>`:"");
+        return `<div class="ac ${ok?"":"off"}"><div><div class="nm">${esc(o.n)} <span class="st ${ok?"ok":""}">${st}</span></div>
+          <div class="line"><span class="econ">${o.econ}</span>${o.stat?`<b>${o.stat}</b>`:""}${o.val?`<span>${o.val}</span>`:""}<span>${o.rng}</span></div></div>
+          <div class="btns">${btn}</div><div class="note">${esc(o.note)}</div></div>`;
+      }).join("")+`</div>`;
+    }
+    h+=`</div>`;
+  }
+  return h+`</section>`;
+}
+
+/* ---------- features ---------- */
+// type: shown under the name. use: which tracker shows availability. txt: what it does. you: Alden's numbers.
+const FEATS=[
+ {g:"Cleric",n:"Channel Divinity",ty:"2 / long rest",use:"cd",ref:"PHB-2024 70",txt:"You can channel energy directly from the Outer Planes to fuel magical effects. When you use this class's Channel Divinity, you can choose which effect to create. You can use it 2 times per Long Rest, and regain one expended use when you finish a Short Rest. If your Channel Divinity requires a saving throw, the DC equals your Cleric spell save DC.",you:"DC 14. Your options are Divine Spark, Turn Undead and Preserve Life. Three uses per long rest from Cleric 6."},
+ {g:"Cleric",n:"Divine Spark",ty:"Action (Magic) · Channel Divinity",use:"cd",act:"cdspark",ref:"PHB-2024 70",txt:"Point your holy symbol at another creature you can see within 30 ft. Roll 1d8 and add your Wisdom modifier. Either restore that many HP to the creature, or make it take a Constitution save: on a failure it takes that much radiant or necrotic damage (your choice), and half on a success.",you:"1d8+4, save DC 14. The die becomes 2d8 at Cleric 7."},
+ {g:"Cleric",n:"Turn Undead",ty:"Action (Magic) · Channel Divinity",use:"cd",act:"cdturn",ref:"PHB-2024 70",txt:"Present your holy symbol. Each Undead of your choice within 30 ft makes a Wisdom save. On a failure it is Frightened and Incapacitated for 1 minute and spends its turns moving as far from you as it can. The effect ends early on a creature if it takes any damage, if you become Incapacitated, or if you die.",you:"Save DC 14. At Cleric 5 you gain Sear Undead, which adds radiant damage to undead that fail."},
+ {g:"Cleric",n:"Spellcasting",ty:"Always on",ref:"PHB-2024 69",txt:"You cast Cleric spells using Wisdom, with a holy symbol as your focus. When you finish a Long Rest you can change which spells you have prepared. A prepared spell with the Ritual tag can be cast as a ritual: it takes 10 minutes longer and uses no spell slot.",you:"Spell save DC 14, spell attack +6. 4 Cleric cantrips, 7 prepared spells of your choice, and 4 × 1st and 3 × 2nd-level slots."},
+ {g:"Cleric",n:"Divine Order: Thaumaturge",ty:"Always on",ref:"PHB-2024 70",txt:"You know one extra cantrip from the Cleric spell list. You also add your Wisdom modifier (minimum +1) to your Intelligence (Arcana) and Intelligence (Religion) checks.",you:"Extra cantrip: Thaumaturgy. Arcana +4, Religion +6."},
+ {g:"Cleric",n:"Core Cleric Traits",ty:"Always on",ref:"PHB-2024 69",txt:"Hit Die d8 per Cleric level. Saving throw proficiency in Wisdom and Charisma. Training with light armour, medium armour and shields, and proficiency with simple weapons.",you:"35 max HP, 4d8 Hit Dice. WIS save +6, CHA save +1. Longsword and Flail are martial weapons, so they hit at +5 without your proficiency bonus. The Sap and Slow tags on your sheet are weapon mastery properties, which Clerics don't get, so they don't apply."},
+ {g:"Cleric",n:"Ability Score Improvement",ty:"Taken at Cleric 4",ref:"PHB-2024 71, 202",txt:"Increase one ability score by 2, or two ability scores by 1 each (maximum 20).",you:"You put this into Wisdom, which is now 18 (+4). Your next feat comes at Cleric 8."},
+ {g:"Life Domain",n:"Disciple of Life",ty:"Always on",ref:"PHB-2024 73",txt:"When a spell you cast with a spell slot restores HP to a creature, that creature regains an additional 2 + the spell slot's level.",you:"+3 HP with a 1st-level slot and +4 with a 2nd, for each creature healed, so Prayer of Healing adds it to every target. It doesn't apply to Divine Spark, cantrips, or the free Magic Initiate Cure Wounds."},
+ {g:"Life Domain",n:"Preserve Life",ty:"Action (Magic) · Channel Divinity",use:"cd",act:"cdpreserve",ref:"PHB-2024 73",txt:"As a Magic Action, you can expend a use of your Channel Divinity to restore 20 HP to Bloodied creatures within 30 ft. of yourself (which can include you), and divide the HP among them. This feature can only restore a creature up to half its maximum HP.",you:"Bloodied means at or below half its maximum HP. This is your best emergency heal when several allies are low."},
+ {g:"Life Domain",n:"Life Domain Spells",ty:"Always on",ref:"PHB-2024 73",txt:"When you reach a Cleric level specified in the Domain Spells table, you always have the listed spells prepared.",you:"Always prepared: Bless, Cure Wounds, Aid and Lesser Restoration. They don't count towards your 7. At Cleric 5 you add Mass Healing Word and Revivify."},
+ {g:"Human",n:"Resourceful",ty:"Heroic Inspiration",use:"insp",act:"insp",ref:"PHB-2024 194",txt:"You gain Heroic Inspiration whenever you finish a Long Rest. Spend it to reroll any one die immediately after you roll it. You must use the new roll.",you:"Works on any die: an attack, a save, damage, or a healing roll."},
+ {g:"Human",n:"Skillful",ty:"Always on",ref:"PHB-2024 193",txt:"You gain proficiency in one skill of your choice.",you:"Your proficient skills are Athletics, Insight, Intimidation, Medicine and Religion."},
+ {g:"Human",n:"Versatile",ty:"Always on",ref:"PHB-2024 194",txt:"You gain an Origin feat of your choice.",you:"You took Magic Initiate (Cleric)."},
+ {g:"Human",n:"Creature Type, Size and Speed",ty:"Always on",ref:"PHB-2024 194",txt:"You're a Humanoid. Your size is Medium or Small, chosen when you select this species. Your Speed is 30 ft.",you:"Medium Humanoid, 30 ft walking speed."},
+ {g:"Feats",n:"Magic Initiate (Cleric)",ty:"1 free cast / long rest",use:"mi",ref:"PHB-2024 201",txt:"Two Cantrips: you learn two cantrips of your choice from the Cleric spell list. Level 1 Spell: choose a level 1 Cleric spell. You always have it prepared, can cast it once without a spell slot, and regain that free cast when you finish a Long Rest. You can also cast it with any spell slots you have. Whenever you gain a level, you can swap one of these spells for another of the same level from the same list.",you:"Cantrips: Word of Radiance and Spare the Dying. Spell: Cure Wounds, free once per long rest. Disciple of Life doesn't add to the free cast because it uses no slot."},
+ {g:"Feats",n:"Ability Score Increases",ty:"From your background",ref:"PHB-2024",txt:"When determining your character's ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1.",you:"Already included in your scores: STR 20, DEX 13, CON 16, INT 11, WIS 18, CHA 9."},
+ {g:"Background",n:"Soldier",ty:"Always on",ref:"PHB-2024",txt:"Skill proficiencies in Athletics and Intimidation, and a gaming set as a tool proficiency.",you:"Gives your Athletics +7, Intimidation +1 and Dice Set proficiency. In the 2024 rules the Soldier background also grants the Savage Attacker feat. It isn't on your sheet, so check with your DM or D&D Beyond."}
+];
+let openF=new Set();
+function featState(f){
+  if(f.use==="cd")return S.cd?["ok",S.cd+" of 2 left"]:["",  "None left"];
+  if(f.use==="insp")return S.insp?["ok","Ready"]:["","Used"];
+  if(f.use==="mi")return S.miCure?["","Used"]:["ok","Ready"];
+  return["pas","Always on"];
+}
+function featBtn(f){
+  if(f.act==="insp")return `<button class="btn sm ${S.insp?"gold":""}" data-act="insp">${S.insp?"Spend Heroic Inspiration":"Regain Heroic Inspiration"}</button>`;
+  if(f.act)return `<button class="btn sm gold" data-act="${f.act}" ${S.cd?"":"disabled"}>Use ${esc(f.n)}</button>`;
+  if(f.use==="mi")return `<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${S.miCure?"disabled":""}>Cast free Cure Wounds</button>`;
+  return "";
+}
+function vFeatures(){
+  const usable=FEATS.filter(f=>f.use), ready=usable.filter(f=>featState(f)[0]==="ok").length;
+  let h=`<section><div class="fsum"><span class="chip">Channel Divinity <b class="num">${S.cd}/2</b></span><span class="chip">Heroic Inspiration <b>${S.insp?"Ready":"Used"}</b></span><span class="chip">Free Cure Wounds <b>${S.miCure?"Used":"Ready"}</b></span></div>
+  <p class="label" style="text-transform:none;letter-spacing:0;margin:0">Tap a feature to see exactly what it does.</p>`;
+  for(const g of [...new Set(FEATS.map(f=>f.g))]){
+    h+=`<div class="panel" style="padding-block:6px 4px"><h2 style="margin:8px 0 2px">${g}</h2>`+FEATS.map((f,i)=>[f,i]).filter(([f])=>f.g===g).map(([f,i])=>{
+      const [c,st]=featState(f), b=featBtn(f);
+      return `<details class="fe" data-f="${i}" ${openF.has(i)?"open":""}><summary><span class="chev" aria-hidden="true">▸</span><span><span class="nm">${esc(f.n)}</span><span class="ty">${esc(f.ty)}</span></span><span class="st ${c}">${st}</span></summary>
+        <div class="body"><p>${esc(f.txt)}</p><div class="you"><b>For Alden</b>${esc(f.you)}</div>${b?`<div class="row">${b}</div>`:""}<span class="ref">${esc(f.ref)}</span></div></details>`;
+    }).join("")+`</div>`;
+  }
+  return h+vLore()+`</section>`;
+}
+document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details.fe")){const i=+d.dataset.f;d.open?openF.add(i):openF.delete(i);}},true);
+
 function vLore(){
-  return `<section class="lore">
+  return `<div class="lore">
   <div class="panel"><h2>Sir Alden Vaelon the Third</h2>
     <p>A seasoned fighter drafted into the Blight War, who stood for the honour of Castoria and has seen a great deal of suffering. The crown gave him the Harrowmont estate in thanks for his service. He gave almost all of it up when his wife and daughter died.</p>
     <p>He hates his official title. He walked east into the mountains to clear his head and leave the city behind, and found refuge in a church. When the local priest fell fatally ill, Alden ended up leading the congregation and caring for the townsfolk.</p>
     <p>He was not a religious man and does not feel worthy of the role, but someone had to take it up. Perhaps it is penance for years of killing. Over time his resolve has softened, and he has found truth in the holy texts he had to consult when people came to him with questions.</p>
     <p class="label" style="text-transform:none;letter-spacing:0">Open threads from the sheet: where he's from, which town the church is in (Coldheath or a nearby village?), and whether he multiclasses into Fighter.</p></div>
-  <div class="panel"><h2>Features</h2>
-    <div class="feat"><b>Disciple of Life</b><span>Slot healing restores an extra 2 + the slot's level.</span></div>
-    <div class="feat"><b>Channel Divinity (2 / long rest)</b><span>Regain one use on a short rest. Divine Spark, Turn Undead, Preserve Life.</span></div>
-    <div class="feat"><b>Preserve Life</b><span>Magic action: share 20 HP among Bloodied creatures within 30 ft, up to half their max HP.</span></div>
-    <div class="feat"><b>Thaumaturge</b><span>Extra cantrip; add WIS (+4) to Arcana and Religion.</span></div>
-    <div class="feat"><b>Magic Initiate (Cleric)</b><span>Word of Radiance, Spare the Dying, and Cure Wounds once per long rest free.</span></div>
-    <div class="feat"><b>Resourceful · Skillful · Versatile</b><span>Heroic Inspiration on each long rest; one extra skill; an Origin feat.</span></div>
-    <div class="feat"><b>Ability Score Improvement</b><span>Taken at 4th level into Wisdom.</span></div>
-  </div>
-  </section>`;
+  </div>`;
 }
 
 function render(){
   renderTabs();renderStatus();
   const v=document.getElementById("view");
-  v.innerHTML={combat:vCombat,spells:vSpells,abilities:vAbilities,gear:vGear,lore:vLore}[tab]();
+  v.innerHTML=({combat:vCombat,actions:vActions,spells:vSpells,features:vFeatures,abilities:vAbilities,gear:vGear}[tab]||vCombat)();
   if(tab==="combat")renderLogOnly();
 }
 
@@ -577,6 +709,8 @@ document.addEventListener("click",e=>{
     case"mi":S.miCure=!S.miCure;save();render();break;
     case"prep":{const n=t.dataset.n,k=S.prepared.indexOf(n);if(k>=0)S.prepared.splice(k,1);else if(S.prepared.length<PREP_MAX)S.prepared.push(n);else{toastMsg(`You can prepare ${PREP_MAX}. Unprepare one first.`);break;}save();render();break;}
     case"col":{const k=COL.indexOf(i);k>=0?COL.splice(k,1):COL.push(i);try{localStorage.setItem("alden-col",JSON.stringify(COL))}catch(e){};render();break;}
+    case"acol":{const k=t.dataset.k,j=ACOL.indexOf(k);j>=0?ACOL.splice(j,1):ACOL.push(k);try{localStorage.setItem("alden-acol",JSON.stringify(ACOL))}catch(e){};render();break;}
+    case"atkx":{const o=ACTS[i],r=t.dataset.v==="2"?o.roll2:o.roll;attack(o.n+(t.dataset.v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type);break;}
     case"prepfilter":window._pf=!window._pf;render();break;
     case"castopen":castOpen=i;render();break;
     case"castclose":castOpen=null;render();break;
