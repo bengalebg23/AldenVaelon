@@ -195,6 +195,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .qb .ql{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qb .qv{font-family:var(--mono);font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qb.on{border-color:var(--gold);background:var(--gold-soft)}
+.satip{grid-column:1/-1;font-size:.8rem;line-height:1.35;color:var(--ink);background:var(--gold-soft);border-left:3px solid var(--gold);border-radius:4px;padding:5px 8px;margin-top:4px}
+.satip b{color:var(--gold);margin-right:4px}
 /* tabbar */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
@@ -323,7 +325,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.4.5";
+const VERSION="v1.4.6";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -480,7 +482,7 @@ function vCombat(){
     <div class="seg" role="group" aria-label="Roll mode">${[["n","Normal"],["a","Advantage"],["d","Disadvantage"]].map(([k,l])=>`<button data-mode="${k}" aria-pressed="${mode===k}">${l}</button>`).join("")}</div></div>
   <div class="panel">
     <h2>Attacks</h2>
-    ${ATTACKS.map((a,i)=>`<div class="atk"><div><b>${a.n}</b><div class="meta">${a.dmg} ${a.type} · ${a.meta}</div></div><span class="num">${sgn(a.hit)}</span><button class="btn sm gold" data-act="atk" data-i="${i}">Roll</button></div>`).join("")}
+    ${ATTACKS.map((a,i)=>`<div class="atk"><div><b>${a.n}</b><div class="meta">${a.dmg} ${a.type} · ${a.meta}</div>${/d/.test(a.dmg)?SA_TIP:""}</div><span class="num">${sgn(a.hit)}</span><button class="btn sm gold" data-act="atk" data-i="${i}">Roll</button></div>`).join("")}
   </div>
   <div class="panel track">
     <span class="name">Channel Divinity</span>${pips(S.cd,2,"cd","","Channel Divinity")}
@@ -568,6 +570,7 @@ function vGear(){
   </section>`;
 }
 
+const SA_TIP=`<div class="satip"><b>Savage Attacker</b> Rolling real dice? Roll the damage dice twice and keep either. Once per turn, weapon dice only.</div>`;
 const SI=n=>SPELLS.findIndex(s=>s[0]===n);
 const prepd=n=>{const s=SPELLS[SI(n)];return !!s&&(s[1]===0||!!s[9]||S.prepared.includes(n));};
 function castCtl(i){
@@ -690,7 +693,7 @@ function vActions(){
     const hb=`<button class="hidebtn" data-act="${isHid?"unhide":"hide"}" data-n="${esc(o.n)}" aria-label="${isHid?"Show":"Hide"} ${esc(o.n)}" title="${isHid?"Show again":"Hide this"}">${isHid?"Show":"Hide"}</button>`;
     return `<div class="ac ${ok?"":"off"} ${isHid?"hiddenrow":""}"><div><div class="nm">${esc(o.n)} <span class="st ${ok?"ok":""}">${st}</span></div>
       <div class="line"><span class="econ">${o.econ}</span>${o.stat?`<b>${o.stat}</b>`:""}${o.val?`<span>${o.val}</span>`:""}${o.rng?`<span>${o.rng}</span>`:""}</div></div>
-      <div class="btns">${btn}${hb}</div><div class="note">${esc(o.note)}</div></div>`;
+      <div class="btns">${btn}${hb}</div><div class="note">${esc(o.note)}</div>${o.weapon?SA_TIP:""}</div>`;
   };
   let shown=0;
   for(const [k,label] of ACAT){
