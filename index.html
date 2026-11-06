@@ -188,6 +188,13 @@ details.fe .you{background:var(--sunk);border-radius:8px;padding:8px 10px;font-s
 details.fe .you b{color:var(--gold);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px}
 details.fe .ref{font-size:.75rem;color:var(--muted)}
 .fsum{display:flex;gap:8px;flex-wrap:wrap}
+/* quick bar: always on screen */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:16;background:var(--bg)}
+#quick{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:var(--bg);max-width:760px;margin:0 auto 14px;padding-block:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-bottom:1px solid var(--line)}
+.qb{display:grid;gap:1px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;min-width:0}
+.qb .ql{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qb .qv{font-family:var(--mono);font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qb.on{border-color:var(--gold);background:var(--gold-soft)}
 /* tabbar */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
@@ -223,6 +230,7 @@ nav button[aria-current=true]{color:var(--blue);background:var(--blue-soft)}
   <div class="status" id="status"></div>
 </header>
 
+<div id="quick" aria-label="Quick rolls"></div>
 <main id="view"></main>
 </div>
 
@@ -315,7 +323,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.4.3";
+const VERSION="v1.4.4";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -427,7 +435,14 @@ const TABS=[["combat","Combat",'<path d="M5 19 19 5M14 5h5v5M5 14l5 5M3 21l3-3" 
  ["gear","Gear",'<path d="M6 8h12l-1 12H7zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>']];
 
 function renderTabs(){document.getElementById("tabs").innerHTML=TABS.map(([k,l,ic])=>`<button data-tab="${k}" aria-current="${tab===k}"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${l}</button>`).join("");}
+function renderQuick(){
+  const el=document.getElementById("quick"); if(!el)return;
+  el.innerHTML=`<button class="qb ${S.insp?"on":""}" data-act="insp" aria-pressed="${S.insp}"><span class="ql">Heroic Insp.</span><span class="qv">${S.insp?"Ready · spend":"Used · regain"}</span></button>
+  <button class="qb" data-act="init"><span class="ql">Initiative</span><span class="qv">Roll +3</span></button>
+  <button class="qb ${S.conc?"on":""}" data-act="chk" data-n="Concentration (CON save, DC 10 or half damage)" data-m="3"><span class="ql">Conc. save</span><span class="qv">${S.conc?"+3 · "+esc(S.conc):"Roll +3"}</span></button>`;
+}
 function renderStatus(){
+  renderQuick();
   const hpPct=S.hp/maxHP();
   document.getElementById("status").innerHTML=
    `<span class="chip"><b class="num">${S.hp}${S.temp?"+"+S.temp:""}</b>/<span class="num">${maxHP()}</span> HP</span>
@@ -590,9 +605,6 @@ const ACTS=[
  {cat:"r",n:"Turn Undead",cd:1,econ:"Action (Magic)",stat:"WIS 14",val:"Frightened + Incapacitated",rng:"30 ft",note:"Undead you choose save or are Frightened and Incapacitated for 1 minute and flee from you. Ends on a creature if it takes damage.",act:"cdturn"},
  {cat:"u",sub:"Healing",n:"Cure Wounds (free cast)",econ:"Action · no slot",stat:"Heal",val:"2d8+4",rng:"Touch",note:"Magic Initiate: once per long rest without a slot. Disciple of Life doesn't apply because no slot is used.",av:()=>S.miCure?[false,"Used"]:[true,"Ready"],btn:ok=>`<button class="btn sm gold" data-act="cast" data-i="${SI("Cure Wounds")}" data-l="mi" ${ok?"":"disabled"}>Cast free</button>`},
  {cat:"m",n:"Opportunity Attack",weapon:1,econ:"Reaction",stat:"+8",val:"1d6+6 piercing",rng:"5 ft",note:"When a creature you can see leaves your reach, make one melee attack against it. Uses your reaction until the start of your next turn.",roll:{hit:8,dmg:"1d6+6",type:"piercing"}},
- {cat:"u",sub:"Anytime",n:"Heroic Inspiration",econ:"No action",stat:"",val:"Reroll one die",rng:"Any roll",note:"Spend it right after any roll (attack, save, check, damage or healing) to reroll one die. You must use the new roll. You regain it on every long rest (Resourceful).",av:()=>S.insp?[true,"Ready"]:[false,"Used"],btn:ok=>`<button class="btn sm ${ok?"gold":""}" data-act="insp">${ok?"Spend":"Regain"}</button>`},
- {cat:"u",sub:"Anytime",n:"Initiative",econ:"Start of combat",stat:"+3",val:"",rng:"",note:"Alert adds your proficiency bonus. Straight after rolling you can swap initiative with one willing ally who isn't Incapacitated.",btn:()=>`<button class="btn sm gold" data-act="init">Roll +3</button>`},
- {cat:"u",sub:"Anytime",n:"Concentration check",econ:"No action",stat:"CON save +3",val:"DC 10 or half damage",rng:"When hit",note:"When you take damage while concentrating, make a CON save: DC 10 or half the damage taken, whichever is higher (max DC 30). Fail and the spell ends.",av:()=>S.conc?[true,"On "+S.conc]:[true,"Not concentrating"],btn:()=>`<button class="btn sm gold" data-act="chk" data-n="Concentration (CON save)" data-m="3">Roll</button>`},
  {cat:"u",sub:"Standard actions",n:"Dash",econ:"Action",stat:"",val:"+30 ft",rng:"",note:"Gain extra movement equal to your Speed for this turn."},
  {cat:"u",sub:"Standard actions",n:"Disengage",econ:"Action",stat:"",val:"",rng:"",note:"Your movement doesn't provoke Opportunity Attacks for the rest of the turn."},
  {cat:"u",sub:"Standard actions",n:"Dodge",econ:"Action",stat:"",val:"",rng:"",note:"Until your next turn, attacks against you have disadvantage if you can see the attacker, and you make DEX saves with advantage. Lost if you're Incapacitated or your Speed drops to 0."},
