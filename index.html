@@ -326,7 +326,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.4.8";
+const VERSION="v1.4.9";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -851,5 +851,12 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="newIt
 render();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
+<!-- Install button: Chrome's own ⋮ menu install is unreliable on Ben's Pixel; this route works. -->
+<button id="installBtn" type="button" hidden style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:9999;padding:10px 18px;border:0;border-radius:999px;background:#294778;color:#ffffff;font:600 14px/1 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)">Install app</button>
+<script>(function(){var p=null,b=document.getElementById('installBtn');
+if(matchMedia('(display-mode: standalone)').matches)return;
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();p=e;b.hidden=false;});
+b.addEventListener('click',function(){if(!p)return;p.prompt();p.userChoice.finally(function(){p=null;b.hidden=true;});});
+addEventListener('appinstalled',function(){b.hidden=true;});})();</script>
 </body>
 </html>
