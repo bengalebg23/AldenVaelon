@@ -315,7 +315,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH="aldenvaelon/state";
-const VERSION="v1.4.1";
+const VERSION="v1.4.2";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem("alden-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem("alden-at")||0);}catch(e){}
@@ -620,8 +620,17 @@ function actAvail(o){
 }
 const ACAT=[["m","Melee"],["r","Ranged"],["b","Bonus actions"],["u","Utility"]];
 const USUB=["Healing","Spells","Anytime","Standard actions","Rest & recovery"];
-let AF="all",AVONLY=false,SHOWHID=false;
-try{AF=localStorage.getItem("alden-af")||"all";AVONLY=localStorage.getItem("alden-avonly")==="1";}catch(e){}
+let AF="all",AVONLY=false,SHOWHID=false,RT="atk";
+// Ranged = anything that reaches beyond 5 ft. Attacks vs healing/buffs is a toggle inside the section.
+const isRanged=o=>/\d+\s*ft/.test(o.rng||"")&&!/^(Touch|Self|5 ft|Move)/.test(o.rng);
+const rKind=o=>o.n==="Divine Spark"?"both":(SUPPORT.has(o.spell||o.n)||/^Heal/.test(o.stat||"")||o.n==="Preserve Life")?"heal":"atk";
+function inSec(o,k){
+  const rangedHeal=o.cat==="u"&&o.sub==="Healing"&&isRanged(o);
+  if(k==="r")return o.cat==="r"||rangedHeal||(o.cat==="b"&&isRanged(o));
+  if(k==="u")return o.cat==="u"&&!rangedHeal;
+  return o.cat===k;
+}
+try{AF=localStorage.getItem("alden-af")||"all";RT=localStorage.getItem("alden-rt")||"atk";AVONLY=localStorage.getItem("alden-avonly")==="1";}catch(e){}
 const SUPPORT=new Set(["Bless","Aid","Guidance","Spare the Dying","Protection from Evil and Good","Warding Bond","Enhance Ability","Protection from Poison","Sanctuary","Shield of Faith","Lesser Restoration","Gentle Repose"]);
 // Any prepared spell not already listed above gets its own row, so nothing on the Spells tab is missing here.
 function autoSpellRows(){
@@ -667,12 +676,20 @@ function vActions(){
   let shown=0;
   for(const [k,label] of ACAT){
     if(AF!=="all"&&AF!==k)continue;
-    const all=ALL.map(([o,i])=>[o,i,actAvail(o)]).filter(([o,,a])=>o.cat===k&&a);
+    let all=ALL.map(([o,i])=>[o,i,actAvail(o)]).filter(([o,,a])=>inSec(o,k)&&a);
+    let tog="";
+    if(k==="r"){
+      const vis=x=>!hid.has(x[0].n);
+      const nA=all.filter(x=>rKind(x[0])!=="heal"&&vis(x)).length, nH=all.filter(x=>rKind(x[0])!=="atk"&&vis(x)).length;
+      tog=`<div class="seg filt" role="group" aria-label="Ranged type" style="margin-top:6px"><button data-act="rt" data-k="atk" aria-pressed="${RT==="atk"}">Attacks (${nA})</button><button data-act="rt" data-k="heal" aria-pressed="${RT==="heal"}">Healing & buffs (${nH})</button></div>`;
+      all=all.filter(([o])=>RT==="atk"?rKind(o)!=="heal":rKind(o)!=="atk");
+    }
     const nh=all.filter(([o])=>hid.has(o.n)).length;
     const rows=all.filter(([o,,a])=>(SHOWHID||!hid.has(o.n))&&(!AVONLY||a[0]));
     const ready=all.filter(([o,,a])=>a[0]&&!hid.has(o.n)).length, total=all.length-nh, shut=ACOL.includes(k);
     h+=`<div><button class="lvl-title" data-act="acol" data-k="${k}" aria-expanded="${!shut}"><span class="chev" aria-hidden="true">${shut?"▸":"▾"}</span><h2>${label}</h2><span class="cnt">${ready} of ${total} available${nh?` <span class="sub">· ${nh} hidden</span>`:""}</span></button>`;
     if(!shut){
+      h+=tog;
       shown+=rows.length;
       let body="";
       if(k==="u"){
@@ -788,6 +805,7 @@ document.addEventListener("click",e=>{
     case"col":{const k=COL.indexOf(i);k>=0?COL.splice(k,1):COL.push(i);try{localStorage.setItem("alden-col",JSON.stringify(COL))}catch(e){};render();break;}
     case"af":AF=t.dataset.k;try{localStorage.setItem("alden-af",AF)}catch(e){};render();break;
     case"avonly":AVONLY=!AVONLY;try{localStorage.setItem("alden-avonly",AVONLY?"1":"0")}catch(e){};render();break;
+    case"rt":RT=t.dataset.k;try{localStorage.setItem("alden-rt",RT)}catch(e){};render();break;
     case"showhid":SHOWHID=!SHOWHID;render();break;
     case"hide":{const n=t.dataset.n;S.hidden=[...new Set([...(S.hidden||[]),n])];save();render();toastMsg(`Hidden ${n}. Use "Show hidden" to bring it back.`);break;}
     case"unhide":{const n=t.dataset.n;S.hidden=(S.hidden||[]).filter(x=>x!==n);save();render();break;}
