@@ -279,6 +279,7 @@ const CHARS={
     <path d="M27 15v30M18 26h18" stroke="var(--surface)" stroke-width="5" stroke-linecap="round"/>
     <circle cx="27" cy="26" r="11" fill="none" stroke="var(--gold)" stroke-width="2"/>`,
   // AC breakdown: [source, value, explanation]. "always" parts must add up to ac.
+  inspNote:"You get it back at the end of every long rest from your Human trait, Resourceful. Your DM can also award it during play.",
   acParts:[["Chain Shirt","13","Medium armour base"],["Dexterity","+1","DEX 13. Medium armour adds your DEX modifier, up to +2"],["Shield","+2","Needs a free hand, which is why the spear is used one-handed"]],
   acExtra:[["Shield of Faith","+2","While someone's Shield of Faith is on you (concentration, 10 minutes)"],["Half cover","+2","Behind a low wall, furniture or another creature"],["Three-quarters cover","+5","Behind an arrow slit or a thick tree trunk"]],
   ac:16,init:3,speed:30,conSave:3,stat4:["Spell DC","14"],MAXHP:35,hdMax:4,hdDie:"1d8+3",
@@ -431,6 +432,7 @@ const CHARS={
     <circle cx="25" cy="26" r="12" fill="var(--surface)"/>
     <circle cx="30" cy="22" r="11" fill="var(--blue)"/>
     <path d="M27 42v10M23 46h8" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round"/>`,
+  inspNote:"Your DM awards it, usually for great roleplay, a clever plan or a heroic moment. You don't get it back automatically on a rest.",
   acParts:[["Leather Armour","11","Light armour base"],["Dexterity","+3","DEX 17. Light armour adds your full DEX modifier"]],
   acExtra:[["Half cover","+2","Behind a low wall, furniture or another creature"],["Three-quarters cover","+5","Behind an arrow slit or a thick tree trunk"]],
   ac:14,init:3,speed:30,conSave:2,stat4:["Sneak Atk","2d6"],MAXHP:31,hdMax:4,hdDie:"1d8+2",
@@ -542,7 +544,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH=C.fbPath;
-const VERSION="v1.5.1";
+const VERSION="v1.5.2";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem(KEY+"-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem(KEY+"-at")||0);}catch(e){}
@@ -659,7 +661,7 @@ function renderTabs(){const T=TABS.filter(t=>t[0]!=="spells"||SPELLS.length);doc
 function renderQuick(){
   const el=document.getElementById("quick"); if(!el)return;
   const Q={
-    insp:()=>`<button class="qb ${S.insp?"on":""}" data-act="insp" aria-pressed="${S.insp}"><span class="ql">Heroic Insp.</span><span class="qv">${S.insp?"Ready · spend":C.inspDefault?"Used · regain":"None · add"}</span></button>`,
+    insp:()=>`<button class="qb ${S.insp?"on":""}" data-act="inspinfo" aria-pressed="${S.insp}"><span class="ql">Heroic Insp.</span><span class="qv">${S.insp?"Ready · spend":C.inspDefault?"Used · regain":"None · add"}</span></button>`,
     init:()=>`<button class="qb" data-act="init"><span class="ql">Initiative</span><span class="qv">Roll ${sgn(C.init)}</span></button>`,
     conc:()=>`<button class="qb ${S.conc?"on":""}" data-act="chk" data-n="Concentration (CON save, DC 10 or half damage)" data-m="${C.conSave}"><span class="ql">Conc. save</span><span class="qv">${S.conc?sgn(C.conSave)+" · "+esc(S.conc):"Roll "+sgn(C.conSave)}</span></button>`,
     sa:()=>`<button class="qb ${S.saUsed?"":"on"}" data-act="sa" aria-pressed="${!S.saUsed}"><span class="ql">Sneak Attack</span><span class="qv">${S.saUsed?"Used · reset":"Ready · "+C.sneak}</span></button>`
@@ -683,6 +685,18 @@ function renderAC(show){
     <div class="acr acsum"><span class="acv num">${C.ac}</span><span><b>Your AC</b></span></div>
     <div class="label" style="margin-top:6px">Situational bonuses</div>
     ${C.acExtra.map(row).join("")}
+  </div>`;
+}
+function renderInsp(show){
+  const el=document.getElementById("acsheet");el.hidden=!show;if(!show)return;
+  el.innerHTML=`<div class="acbox" role="dialog" aria-label="Heroic Inspiration">
+    <div class="row" style="justify-content:space-between"><h2>Heroic Inspiration</h2><button class="btn sm" data-act="acclose">Close</button></div>
+    <div class="acr acsum"><span class="acv num">${S.insp?"✓":"–"}</span><span><b>${S.insp?"You have it":"You don't have it right now"}</b></span></div>
+    <div class="acr"><span class="acv">Use</span><span><b>Reroll one die</b><small>Straight after any roll (an attack, a save, a skill check, damage or healing), spend it to reroll one die. You must use the new roll, even if it's worse.</small></span></div>
+    <div class="acr"><span class="acv">Limit</span><span><b>Only one at a time</b><small>It doesn't stack. If you'd gain it while you already have it, you can give it to another player character in the party who doesn't have it.</small></span></div>
+    <div class="acr"><span class="acv">Gain</span><span><b>How you get it</b><small>${esc(C.inspNote)}</small></span></div>
+    <div class="acr"><span class="acv">Tip</span><span><b>Don't hoard it</b><small>Use it on a failed save against something nasty, a missed attack that matters, or a low heal on a dying ally.</small></span></div>
+    <div class="row" style="margin-top:8px">${S.insp?`<button class="btn gold" data-act="inspspend">Spend it</button>`:`<button class="btn gold" data-act="inspgain">I've been given it</button>`}</div>
   </div>`;
 }
 function renderPicker(show,first){
@@ -1040,6 +1054,9 @@ document.addEventListener("click",e=>{
     case"atkx":{const o=ACTS[i],v=t.dataset.v,r=v==="2"?o.roll2:o.roll;attack(o.n+(v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type,!!o.weapon,v==="s");break;}
     case"sa":S.saUsed=!S.saUsed;save();render();break;
     case"potion":{const p=S.inv.find(x=>x.n==="Potion of Healing");if(!p||p.q<1)break;p.q--;const r=roll("2d4+2");S.hp=Math.min(maxHP(),S.hp+r.total);S.ds={s:0,f:0};save();render();log("Potion of Healing (healed)",r.total,r.detail);break;}
+    case"inspinfo":renderInsp(true);break;
+    case"inspspend":S.insp=false;save();renderInsp(false);render();toastMsg("Heroic Inspiration spent. Reroll your die.");break;
+    case"inspgain":S.insp=true;save();renderInsp(false);render();toastMsg("Heroic Inspiration ready.");break;
     case"acinfo":renderAC(true);break;
     case"acclose":renderAC(false);break;
     case"charmenu":renderPicker(true,false);break;
