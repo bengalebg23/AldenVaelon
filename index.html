@@ -216,6 +216,17 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .dot.e{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--gold)}
 .atkb{display:flex;flex-direction:column;gap:4px;align-items:stretch}
 .btn small{display:block;font-size:.62rem;font-weight:400;opacity:.85;white-space:nowrap}
+/* AC breakdown sheet */
+#acsheet{position:fixed;inset:0;z-index:35;background:rgb(0 0 0 / .45);display:grid;align-items:end;justify-items:center}
+#acsheet[hidden]{display:none}
+.acbox{width:100%;max-width:520px;background:var(--surface);color:var(--ink);border-radius:14px 14px 0 0;display:grid;gap:4px;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.acr{display:grid;grid-template-columns:3.2em 1fr;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.acr small{display:block;color:var(--muted);font-size:.85rem}
+.acv{font-weight:600;text-align:right}
+.acsum{border-top:2px solid var(--ink)}
+.acsum .acv{font-size:1.3rem;color:var(--gold)}
+button.chip{font:inherit;color:inherit;cursor:pointer}
 /* tabbar */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
@@ -254,6 +265,7 @@ nav button[aria-current=true]{color:var(--blue);background:var(--blue-soft)}
 <nav aria-label="Sections"><div class="in" id="tabs"></div></nav>
 <div id="toast" hidden></div>
 <div id="picker" hidden></div>
+<div id="acsheet" hidden></div>
 
 <script>
 /* ---------- characters ---------- */
@@ -266,6 +278,9 @@ const CHARS={
     <path d="M8 8h38v22c0 14-9 22-19 27C17 52 8 44 8 30z" fill="none" stroke="var(--surface)" stroke-width="1.5" opacity=".6"/>
     <path d="M27 15v30M18 26h18" stroke="var(--surface)" stroke-width="5" stroke-linecap="round"/>
     <circle cx="27" cy="26" r="11" fill="none" stroke="var(--gold)" stroke-width="2"/>`,
+  // AC breakdown: [source, value, explanation]. "always" parts must add up to ac.
+  acParts:[["Chain Shirt","13","Medium armour base"],["Dexterity","+1","DEX 13. Medium armour adds your DEX modifier, up to +2"],["Shield","+2","Needs a free hand, which is why the spear is used one-handed"]],
+  acExtra:[["Shield of Faith","+2","While someone's Shield of Faith is on you (concentration, 10 minutes)"],["Half cover","+2","Behind a low wall, furniture or another creature"],["Three-quarters cover","+5","Behind an arrow slit or a thick tree trunk"]],
   ac:16,init:3,speed:30,conSave:3,stat4:["Spell DC","14"],MAXHP:35,hdMax:4,hdDie:"1d8+3",
   PB:2,WIS:4,DC:14,savage:true,elvenAccuracy:false,sneak:null,inspDefault:true,quick:["insp","init","conc"],
   ABIL:[["STR","Strength",20,5,false],["DEX","Dexterity",13,1,false],["CON","Constitution",16,3,false],["INT","Intelligence",11,0,false],["WIS","Wisdom",18,6,true],["CHA","Charisma",9,1,true]],
@@ -416,6 +431,8 @@ const CHARS={
     <circle cx="25" cy="26" r="12" fill="var(--surface)"/>
     <circle cx="30" cy="22" r="11" fill="var(--blue)"/>
     <path d="M27 42v10M23 46h8" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round"/>`,
+  acParts:[["Leather Armour","11","Light armour base"],["Dexterity","+3","DEX 17. Light armour adds your full DEX modifier"]],
+  acExtra:[["Half cover","+2","Behind a low wall, furniture or another creature"],["Three-quarters cover","+5","Behind an arrow slit or a thick tree trunk"]],
   ac:14,init:3,speed:30,conSave:2,stat4:["Sneak Atk","2d6"],MAXHP:31,hdMax:4,hdDie:"1d8+2",
   PB:2,WIS:1,DC:0,savage:false,elvenAccuracy:true,sneak:"2d6",inspDefault:false,quick:["insp","init","sa"],
   togLabels:{b:{atk:"Combat",heal:"Senses & items"}},
@@ -525,7 +542,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH=C.fbPath;
-const VERSION="v1.5.0";
+const VERSION="v1.5.1";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem(KEY+"-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem(KEY+"-at")||0);}catch(e){}
@@ -657,6 +674,17 @@ function renderHeader(){
   document.documentElement.dataset.char=C.id;
   document.title=C.short+" · Vaelon Characters";
 }
+function renderAC(show){
+  const el=document.getElementById("acsheet");el.hidden=!show;if(!show)return;
+  const row=([n,v,d])=>`<div class="acr"><span class="acv num">${v}</span><span><b>${esc(n)}</b>${d?`<small>${esc(d)}</small>`:""}</span></div>`;
+  el.innerHTML=`<div class="acbox" role="dialog" aria-label="How your AC is worked out">
+    <div class="row" style="justify-content:space-between"><h2>Armour Class</h2><button class="btn sm" data-act="acclose">Close</button></div>
+    ${C.acParts.map(row).join("")}
+    <div class="acr acsum"><span class="acv num">${C.ac}</span><span><b>Your AC</b></span></div>
+    <div class="label" style="margin-top:6px">Situational bonuses</div>
+    ${C.acExtra.map(row).join("")}
+  </div>`;
+}
 function renderPicker(show,first){
   const el=document.getElementById("picker");el.hidden=!show;if(!show)return;
   el.innerHTML=`<div class="pk" role="dialog" aria-label="Choose character"><h2>${first?"Who's playing on this phone?":"Switch character"}</h2>
@@ -669,7 +697,7 @@ function renderStatus(){
   const hpPct=S.hp/maxHP();
   document.getElementById("status").innerHTML=
    `<span class="chip"><b class="num">${S.hp}${S.temp?"+"+S.temp:""}</b>/<span class="num">${maxHP()}</span> HP</span>
-    <span class="chip">AC <b class="num">${C.ac}</b></span>
+    <button class="chip" data-act="acinfo" aria-label="Armour Class ${C.ac}, show how it's worked out">AC <b class="num">${C.ac}</b></button>
     ${S.conc?`<span class="chip conc">Concentrating: ${esc(S.conc)}<button data-act="dropconc" aria-label="End concentration">✕</button></span>`:""}
     ${S.hp===0?`<span class="chip" style="border-color:var(--danger);color:var(--danger)">Down: make death saves</span>`:""}
     <span class="save-state">${saveWhere}</span>`;
@@ -694,7 +722,7 @@ function vCombat(){
       <span class="label" style="margin-left:10px">Failures</span>${[0,1,2].map(i=>`<button class="pip f ${i<S.ds.f?"on":""}" data-act="dsf" data-i="${i}" aria-label="Failure ${i+1}"></button>`).join("")}</div></div>`:""}
   </div>
   <div class="stats">
-    <div class="stat"><div class="label">AC</div><div class="v">${C.ac}</div></div>
+    <div class="stat"><div class="label">AC</div><button class="v" data-act="acinfo" aria-label="Armour Class ${C.ac}, show how it's worked out">${C.ac}</button></div>
     <div class="stat"><div class="label">Initiative</div><button class="v" data-act="init">${sgn(C.init)}</button></div>
     <div class="stat"><div class="label">Speed</div><div class="v">${C.speed}<small>ft</small></div></div>
     <div class="stat"><div class="label">${C.stat4[0]}</div><div class="v">${C.stat4[1]}</div></div>
@@ -970,6 +998,7 @@ function render(){
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
+  if(e.target.id==="acsheet"){renderAC(false);return;}
   const t=e.target.closest("[data-tab],[data-mode],[data-act]");if(!t)return;
   if(t.dataset.tab){tab=t.dataset.tab;try{localStorage.setItem("alden-tab",tab)}catch(e){};render();scrollTo(0,0);return;}
   if(t.dataset.mode){mode=t.dataset.mode;render();return;}
@@ -1011,6 +1040,8 @@ document.addEventListener("click",e=>{
     case"atkx":{const o=ACTS[i],v=t.dataset.v,r=v==="2"?o.roll2:o.roll;attack(o.n+(v==="2"?" (two-handed)":""),r.hit,r.dmg,r.type,!!o.weapon,v==="s");break;}
     case"sa":S.saUsed=!S.saUsed;save();render();break;
     case"potion":{const p=S.inv.find(x=>x.n==="Potion of Healing");if(!p||p.q<1)break;p.q--;const r=roll("2d4+2");S.hp=Math.min(maxHP(),S.hp+r.total);S.ds={s:0,f:0};save();render();log("Potion of Healing (healed)",r.total,r.detail);break;}
+    case"acinfo":renderAC(true);break;
+    case"acclose":renderAC(false);break;
     case"charmenu":renderPicker(true,false);break;
     case"pickclose":renderPicker(false);break;
     case"pickchar":{const k=t.dataset.k;if(!FIRST&&k===C.id){renderPicker(false);break;}try{localStorage.setItem("dnd-char",k);}catch(e){}location.reload();break;}
