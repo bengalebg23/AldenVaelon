@@ -424,7 +424,8 @@ const CHARS={
     <p class="label" style="text-transform:none;letter-spacing:0">Open threads from the sheet: where he's from, which town the church is in (Coldheath or a nearby village?), and whether he multiclasses into Fighter.</p></div>
   <div class="panel"><h2>Faith</h2>
     <div class="feat"><b>A man of many faiths</b><span>Alden holds no single belief strongly. His faith comes from the holy texts he took up while watching over a church and its parish when the pastor fell ill. He draws on whatever wisdom they offer, rather than following one god.</span></div>
-    <div class="feat"><b>Solaris</b><span>The church he kept was Solaris's (known elsewhere as Lathander, god of dawn and renewal), so its texts shape his prayers more than most. The promise of new beginnings sits well with a man doing penance for years of killing.</span></div></div>
+    <div class="feat"><b>Solaris</b><span>The church he kept was Solaris's (known elsewhere as Lathander, god of dawn and renewal), so its texts shape his prayers more than most. The promise of new beginnings sits well with a man doing penance for years of killing.</span></div>
+    <div class="feat"><b>Holy symbols</b><span>A cord of them from many gods, gathered from the parish and his travels, with Solaris's sunrise among them. He reaches for whichever seems to suit the moment, and any of them can serve as his spellcasting focus.</span></div></div>
   </div>`
  },
  ely:{
@@ -547,7 +548,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH=C.fbPath;
-const VERSION="v1.5.4";
+const VERSION="v1.5.5";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem(KEY+"-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem(KEY+"-at")||0);}catch(e){}
