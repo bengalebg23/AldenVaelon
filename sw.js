@@ -1,6 +1,6 @@
 // Service worker for Alden Vaelon III. Network-first so updates show straight away;
 // the cache only serves the app when offline. Bump CACHE on every release.
-const CACHE = 'alden-v1.5.3';
+const CACHE = 'alden-v1.5.4';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])).then(() => self.skipWaiting()));
 });
