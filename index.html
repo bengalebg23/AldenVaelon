@@ -422,6 +422,9 @@ const CHARS={
     <p>He hates his official title. He walked east into the mountains to clear his head and leave the city behind, and found refuge in a church. When the local priest fell fatally ill, Alden ended up leading the congregation and caring for the townsfolk.</p>
     <p>He was not a religious man and does not feel worthy of the role, but someone had to take it up. Perhaps it is penance for years of killing. Over time his resolve has softened, and he has found truth in the holy texts he had to consult when people came to him with questions.</p>
     <p class="label" style="text-transform:none;letter-spacing:0">Open threads from the sheet: where he's from, which town the church is in (Coldheath or a nearby village?), and whether he multiclasses into Fighter.</p></div>
+  <div class="panel"><h2>Faith</h2>
+    <div class="feat"><b>Solaris</b><span>Known elsewhere as Lathander, god of dawn and renewal. Alden serves Solaris through the church he took over, and finds in the dawn god's promise of new beginnings a second chance after years of killing.</span></div>
+    <div class="feat"><b>Holy symbol</b><span>A sunrise. Lathander's symbol is a road leading into a sunrise; check with your DM how Solaris is shown in Castoria.</span></div></div>
   </div>`
  },
  ely:{
@@ -544,7 +547,7 @@ const FIREBASE_CONFIG={
   appId:"1:762981180689:web:799779511c6c615b2d98b0"
 };
 const FB_PATH=C.fbPath;
-const VERSION="v1.5.2";
+const VERSION="v1.5.3";
 let fbRef=null, saveWhere="Saved on this device · "+VERSION, saveTimer=null, lastAt=0;
 let device; try{device=localStorage.getItem("alden-device")||Math.random().toString(36).slice(2);localStorage.setItem("alden-device",device);}catch(e){device=Math.random().toString(36).slice(2);}
 try{const raw=localStorage.getItem(KEY+"-state"); if(raw){S=Object.assign(structuredClone(DEFAULT),JSON.parse(raw));migrate();} lastAt=+(localStorage.getItem(KEY+"-at")||0);}catch(e){}
